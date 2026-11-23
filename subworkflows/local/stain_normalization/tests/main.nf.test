@@ -6,7 +6,7 @@ nextflow_workflow {
     tag "subworkflows"
     tag "subworkflows_local"
     tag "subworkflows/stain_normalization"
-    tag "torchstain/reinhard"
+    tag "squidpy/normalize"
 
     test("Fit the selected sample once and normalize every slide") {
         options "-stub-run"
@@ -28,16 +28,14 @@ nextflow_workflow {
             assert workflow.success
             def tasks = workflow.trace.tasks().collect { it.name.tokenize(':').last() }.sort()
             assert tasks == [
-                'TORCHSTAIN_REINHARD (query)',
-                'TORCHSTAIN_REINHARD (reference)',
-                'TORCHSTAIN_REINHARD_FIT (reference)',
+                'SQUIDPY_NORMALIZE (query)',
+                'SQUIDPY_NORMALIZE (reference)',
+                'SQUIDPY_NORMALIZE_FIT (reference)',
             ]
-            def slides = workflow.out.slides.collect { meta, slide, _report ->
+            def slides = workflow.out.slides.collect { meta, slide ->
                 [meta.id, path(slide).fileName.toString()]
             }.sort { it[0] }
-            def (meta, reference) = workflow.out.reference[0]
-            assert meta.id == 'reference'
-            assert snapshot(slides, path(reference).fileName.toString()).match()
+            assert snapshot(slides).match()
         }
     }
 }

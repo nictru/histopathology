@@ -1,40 +1,25 @@
-include { TORCHSTAIN_MACENKO                             } from '../../../modules/local/torchstain/macenko/main'
-include { TORCHSTAIN_REINHARD                            } from '../../../modules/local/torchstain/reinhard/main'
-include { TORCHSTAIN_REINHARD as TORCHSTAIN_REINHARD_FIT } from '../../../modules/local/torchstain/reinhard/main'
+include { SQUIDPY_NORMALIZE as SQUIDPY_NORMALIZE_FIT } from '../../../modules/local/squidpy/normalize/main'
+include { SQUIDPY_NORMALIZE                          } from '../../../modules/local/squidpy/normalize/main'
 
 workflow STAIN_NORMALIZATION {
     take:
     ch_slides    // channel: [ val(meta), path(slide) ]
     method       // value: stain normalization method
-    reference_id // value: sample ID for either Reinhard method
+    reference_id // value: reference sample ID
 
     main:
-    def ch_reference = channel.empty()
-    if (method == 'macenko') {
-        TORCHSTAIN_MACENKO(ch_slides)
-        ch_normalized = TORCHSTAIN_MACENKO.out.slide
+    if (!reference_id) {
+        error("Set --stain_reference to a sample ID from the samplesheet.")
     }
-    else if (method in ['reinhard', 'reinhardmodified']) {
-        if (!reference_id) {
-            error("Set --reinhard_reference to a sample ID when using --stain_normalization ${method}.")
-        }
-        def modified = method == 'reinhardmodified'
-        def ch_reference_slide = ch_slides
-            .filter { meta, _slide -> meta.id == reference_id }
-            .ifEmpty { error("Reference sample '${reference_id}' was not found in the samplesheet.") }
-            .first()
+    def ch_reference_slide = ch_slides
+        .filter { meta, _slide -> meta.id == reference_id }
+        .ifEmpty { error("Reference sample '${reference_id}' was not found in the samplesheet.") }
+        .first()
 
-        TORCHSTAIN_REINHARD_FIT(ch_reference_slide, [], modified, true)
-        ch_reference = TORCHSTAIN_REINHARD_FIT.out.reference
-        def fitted_reference = ch_reference.map { _meta, reference -> reference }.first()
-        TORCHSTAIN_REINHARD(ch_slides, fitted_reference, modified, false)
-        ch_normalized = TORCHSTAIN_REINHARD.out.slide
-    }
-    else {
-        error("Unsupported stain normalization method: ${method}")
-    }
+    SQUIDPY_NORMALIZE_FIT(ch_reference_slide, [], method, true)
+    def fitted_reference = SQUIDPY_NORMALIZE_FIT.out.reference.map { _meta, reference -> reference }
+    SQUIDPY_NORMALIZE(ch_slides, fitted_reference, method, false)
 
     emit:
-    slides    = ch_normalized // channel: [ val(meta), path(slide), path(report) ]
-    reference = ch_reference  // channel: [ val(meta), path(reference) ]
+    slides = SQUIDPY_NORMALIZE.out.slide // channel: [ val(meta), path(slide) ]
 }

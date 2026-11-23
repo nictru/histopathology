@@ -1,13 +1,12 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
 name: stain_normalization
-description: Normalize ingested histology slides with Macenko, Reinhard, or Modified Reinhard.
+description: Fit one stain reference and apply it to ingested histology slides using Squidpy.
 keywords:
   - histology
   - stain normalization
   - whole-slide imaging
 components:
-  - torchstain/macenko
-  - torchstain/reinhard
+  - squidpy/normalize
 input:
   - ch_slides:
       type: file
@@ -17,23 +16,17 @@ input:
       pattern: "*.zarr"
   - method:
       type: string
-      description: "Stain normalization method: macenko, reinhard, or reinhardmodified."
+      description: "Stain normalization method: macenko, reinhard, or vahadane."
   - reference_id:
       type: string
-      description: Sample ID of the ingested slide used as the reference for either Reinhard method.
+      description: Sample ID of the ingested slide used as the stain reference.
 output:
   - slides:
       type: file
       description: |
-        Normalized WSIData stores and their normalization reports.
-        Structure: [ val(meta), path(slide), path(report) ]
-      pattern: "*.{normalized.zarr,normalization.json}"
-  - reference:
-      type: file
-      description: |
-        Fitted reference statistics for either Reinhard method.
-        Structure: [ val(meta), path(reference) ]
-      pattern: "*.reinhard_reference.json"
+        Normalized WSIData stores with reference provenance in the attributes.
+        Structure: [ val(meta), path(slide) ]
+      pattern: "*.normalized.zarr"
 authors:
   - "@nictru"
 maintainers:

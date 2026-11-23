@@ -10,10 +10,9 @@
                     "reference",
                     "reference.normalized.zarr"
                 ]
-            ],
-            "reference.reinhard_reference.json"
+            ]
         ],
-        "timestamp": "2026-11-23T19:57:27.551947",
+        "timestamp": "2026-11-23T20:30:46.589552",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.10.7"

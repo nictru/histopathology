@@ -23,7 +23,7 @@ See the [example samplesheet](../assets/samplesheet.csv).
 
 The pipeline reads CZI, TIFF, and JPEG through WSIData's pylibCZI, TiffSlide, and Bio-Formats readers, respectively. It writes a self-contained `<sample>.zarr` to `<OUTDIR>/slides/`. The store contains the RGB image under the `wsi` key. Its attributes record the pixel calibration and the original CZI scene origin when applicable. The pylibCZI reader fills gaps in a CZI scene with black pixels.
 
-Normalization reads the ingested Zarr and writes `<sample>.normalized.zarr` and its report to `<OUTDIR>/normalized_slides/`. Reopen either store with WSIData.
+Normalization reads the ingested Zarr and writes `<sample>.normalized.zarr` to `<OUTDIR>/normalized_slides/`. Reopen either store with WSIData.
 
 ```python
 from spatialdata import read_zarr
@@ -34,16 +34,16 @@ wsi = open_wsi(read_zarr("sample.normalized.zarr"), image_key="wsi")
 
 ## Stain normalization
 
-Macenko is the default. To use Reinhard or Modified Reinhard, set `--stain_normalization reinhard` or `--stain_normalization reinhardmodified` and pass an existing `sample` value with `--reinhard_reference`.
+Macenko is the default. Set `--stain_normalization reinhard` or `--stain_normalization vahadane` to select another method. Pass an existing `sample` value with `--stain_reference` for any method.
 
-The pipeline fits the selected reference slide once and uses it to normalize every slide in the samplesheet, including the reference itself. It stores the fitted Lab statistics in `<OUTDIR>/normalized_slides/<sample>.reinhard_reference.json`.
+The pipeline fits the selected reference slide once and uses it to normalize every slide in the samplesheet, including the reference itself. Squidpy estimates stain statistics from tissue and preserves the background. Each normalized Zarr records the method, reference sample, and fitted statistics in its attributes. Slides with no detected tissue retain their original pixels.
 
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:
 
 ```bash
-nextflow run nf-core/histopathology --input ./samplesheet.csv --outdir ./results  -profile docker
+nextflow run nf-core/histopathology --input ./samplesheet.csv --stain_reference example_tiff --outdir ./results -profile docker
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.

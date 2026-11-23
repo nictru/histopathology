@@ -44,6 +44,7 @@ Prepare a [slide samplesheet](docs/usage.md#samplesheet-input) with one row per 
 nextflow run nf-core/histopathology \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
+   --stain_reference example_tiff \
    --outdir <OUTDIR>
 ```
 

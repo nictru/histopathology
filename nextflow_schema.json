@@ -51,14 +51,14 @@
             "properties": {
                 "stain_normalization": {
                     "type": "string",
-                    "enum": ["macenko", "reinhard", "reinhardmodified"],
+                    "enum": ["macenko", "reinhard", "vahadane"],
                     "default": "macenko",
                     "description": "Method for normalizing the converted whole-slide images."
                 },
-                "reinhard_reference": {
+                "stain_reference": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]*$",
-                    "description": "Samplesheet sample ID used to fit the reference for Reinhard or Modified Reinhard."
+                    "description": "Samplesheet sample ID used to fit the stain reference. Required for all methods."
                 }
             }
         },

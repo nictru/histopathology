@@ -1,0 +1,121 @@
+nextflow_process {
+    name "Test SQUIDPY_NORMALIZE"
+    script "../main.nf"
+    process "SQUIDPY_NORMALIZE"
+
+    tag "modules"
+    tag "modules_local"
+    tag "squidpy/normalize"
+    tag "wsidata/ingest"
+
+    test("Fit a Reinhard reference from tissue") {
+        setup {
+            run("WSIDATA_INGEST") {
+                script "../../../wsidata/ingest/main.nf"
+                process {
+                    """
+                    def image = new java.awt.image.BufferedImage(300, 270, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                    (0..<image.height).each { y ->
+                        (0..<image.width).each { x ->
+                            def color = (x > 30 && x < 269 && y > 30 && y < 239)
+                                ? new java.awt.Color(105 + (x * 7 + y * 3) % 110, 35 + (x * 5 + y * 4) % 120, 110 + (x * 3 + y * 7) % 100)
+                                : java.awt.Color.WHITE
+                            image.setRGB(x, y, color.getRGB())
+                        }
+                    }
+                    def source = java.nio.file.Files.createTempFile('squidpy-reference', '.tif')
+                    assert javax.imageio.ImageIO.write(image, 'tiff', source.toFile())
+                    input[0] = channel.of([[id: 'reference'], source, [], 0.5])
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = WSIDATA_INGEST.out.slide
+                input[1] = []
+                input[2] = 'reinhard'
+                input[3] = true
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.slide.isEmpty()
+            def (meta, reference) = process.out.reference[0]
+            assert meta.id == 'reference'
+            def result = path(reference).json
+            assert result.fit.mu.size() == 3
+            assert result.fit.sigma.size() == 3 && result.fit.sigma.every { it > 0 }
+            assert path(process.out.versions[0]).yaml.SQUIDPY_NORMALIZE.squidpy == '1.8.4'
+            assert snapshot(result.reference_sample, result.fit.method).match()
+        }
+    }
+
+    test("Normalize tissue and retain a blank slide") {
+        setup {
+            run("WSIDATA_INGEST") {
+                script "../../../wsidata/ingest/main.nf"
+                process {
+                    """
+                    def image = new java.awt.image.BufferedImage(300, 270, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                    def blank = new java.awt.image.BufferedImage(240, 180, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                    def graphics = blank.createGraphics()
+                    graphics.setColor(java.awt.Color.WHITE)
+                    graphics.fillRect(0, 0, blank.width, blank.height)
+                    graphics.dispose()
+                    (0..<image.height).each { y ->
+                        (0..<image.width).each { x ->
+                            def color = (x > 30 && x < 269 && y > 30 && y < 239)
+                                ? new java.awt.Color(140 + (x + y * 3) % 90, 20 + (x * 4 + y) % 110, 120 + (x * 3 + y * 7) % 90)
+                                : java.awt.Color.WHITE
+                            image.setRGB(x, y, color.getRGB())
+                        }
+                    }
+                    def tissue_path = java.nio.file.Files.createTempFile('squidpy-tissue', '.tif')
+                    def blank_path = java.nio.file.Files.createTempFile('squidpy-blank', '.tif')
+                    assert javax.imageio.ImageIO.write(image, 'tiff', tissue_path.toFile())
+                    assert javax.imageio.ImageIO.write(blank, 'tiff', blank_path.toFile())
+                    input[0] = channel.of(
+                        [[id: 'tissue'], tissue_path, [], 0.5],
+                        [[id: 'blank'], blank_path, [], 0.5],
+                    )
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                def reference_path = java.nio.file.Files.createTempFile('squidpy-reference', '.json')
+                reference_path.toFile().text = '{"reference_sample":"reference","fit":{"method":"reinhard","mu":[8.5,0.2,0.1],"sigma":[0.25,0.08,0.06]}}'
+                input[0] = WSIDATA_INGEST.out.slide
+                input[1] = reference_path
+                input[2] = 'reinhard'
+                input[3] = false
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.reference.isEmpty()
+            def results = process.out.slide.sort { it[0].id }.collect { meta, slide ->
+                assert path(slide).fileName.toString() == "${meta.id}.normalized.zarr"
+                assert java.nio.file.Files.isDirectory(path(slide).resolve('images/wsi'))
+                def attrs = path(path(slide).resolve('zarr.json').toString()).json.attributes
+                assert attrs.slide_properties.mpp == 0.5
+                def levels = meta.id == 'blank' ? [[180, 240]] : [[270, 300], [135, 150]]
+                assert attrs.slide_properties.level_shape == levels
+                assert attrs.normalization.reference_sample == 'reference'
+                assert attrs.normalization.method == 'reinhard'
+                [meta.id, attrs.normalization.skip_reason]
+            }
+            assert snapshot(results).match()
+        }
+    }
+}

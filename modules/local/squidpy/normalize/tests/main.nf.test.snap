@@ -1,0 +1,32 @@
+{
+    "Fit a Reinhard reference from tissue": {
+        "content": [
+            "reference",
+            "reinhard"
+        ],
+        "timestamp": "2026-11-23T20:30:22.81225",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.7"
+        }
+    },
+    "Normalize tissue and retain a blank slide": {
+        "content": [
+            [
+                [
+                    "blank",
+                    null
+                ],
+                [
+                    "tissue",
+                    null
+                ]
+            ]
+        ],
+        "timestamp": "2026-11-23T20:30:40.702046",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.7"
+        }
+    }
+}

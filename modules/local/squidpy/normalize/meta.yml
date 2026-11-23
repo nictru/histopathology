@@ -1,0 +1,78 @@
+name: squidpy_normalize
+description: Fit or apply a Squidpy stain reference to a WSIData Zarr image pyramid.
+keywords:
+  - histology
+  - stain normalization
+  - whole-slide imaging
+tools:
+  - squidpy:
+      description: Spatial analysis and image processing.
+      homepage: https://squidpy.scverse.org/
+      documentation: https://squidpy.readthedocs.io/
+      licence: ["BSD-3-Clause"]
+      identifier: biotools:squidpy
+input:
+  - - meta:
+        type: map
+        description: Sample metadata containing the slide ID.
+    - slide:
+        type: directory
+        description: WSIData store containing an RGB image under the wsi key.
+        pattern: "*.zarr"
+  - fitted_reference:
+      type: file
+      description: Fitted stain statistics used in apply mode. Pass an empty list in fit mode.
+      pattern: "*.stain_reference.json"
+  - method:
+      type: string
+      description: Squidpy stain normalization method.
+      enum: [macenko, reinhard, vahadane]
+  - fit_reference:
+      type: boolean
+      description: Fit a reference when true, or normalize a slide when false.
+output:
+  reference:
+    - - meta:
+          type: map
+          description: Sample metadata containing the reference slide ID.
+      - "${prefix}.stain_reference.json":
+          type: file
+          description: Fitted Squidpy reference statistics and sample ID.
+          pattern: "*.stain_reference.json"
+  slide:
+    - - meta:
+          type: map
+          description: Sample metadata containing the slide ID.
+      - "${prefix}.normalized.zarr":
+          type: directory
+          description: Normalized WSIData store with fitted reference provenance in its attributes.
+          pattern: "*.normalized.zarr"
+  versions:
+    - "versions.yml":
+        type: file
+        description: Software versions.
+        pattern: "versions.yml"
+topics:
+  versions:
+    - "versions.yml":
+        type: file
+        description: Software versions.
+        pattern: "versions.yml"
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/amd64:
+      name: community.wave.seqera.io/library/mahotas_numpy_pip_python_pruned:019535063c082f89
+      build_id: bd-019535063c082f89_1
+      scan_id: sc-cd9223c965f59c1a_1
+  singularity:
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/mahotas_numpy_pip_python_pruned:d55e60cef94e8f25
+      build_id: bd-d55e60cef94e8f25_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/c9/c9b8278f294041a770b0fbc68b12dc380f5224ea88ddb25f5645ec998c523277/data
+  conda:
+    linux/amd64:
+      lock_file: modules/local/squidpy/normalize/.conda-lock/linux_amd64-bd-019535063c082f89_1.txt

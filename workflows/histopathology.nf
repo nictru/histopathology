@@ -22,7 +22,7 @@ workflow HISTOPATHOLOGY {
     take:
     ch_samplesheet // channel: samplesheet read in from --input
     stain_normalization
-    reinhard_reference
+    stain_reference
     multiqc_config
     multiqc_logo
     multiqc_methods_description
@@ -37,7 +37,7 @@ workflow HISTOPATHOLOGY {
     STAIN_NORMALIZATION(
         WSIDATA_INGEST.out.slide,
         stain_normalization,
-        reinhard_reference,
+        stain_reference,
     )
 
     def ch_versions = channel.empty()
@@ -100,7 +100,7 @@ workflow HISTOPATHOLOGY {
     )
     emit:
     slides            = WSIDATA_INGEST.out.slide                                  // channel: [ val(meta), path(slide) ]
-    normalized_slides = STAIN_NORMALIZATION.out.slides                            // channel: [ val(meta), path(slide), path(report) ]
+    normalized_slides = STAIN_NORMALIZATION.out.slides                            // channel: [ val(meta), path(slide) ]
     multiqc_report    = MULTIQC.out.report.map { _meta, report -> [report] }.toList() // channel: /path/to/multiqc_report.html
     versions          = ch_versions                                              // channel: [ path(versions.yml) ]
 }

@@ -4,15 +4,14 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
+  - bioconda::centrosome=1.3.4
+  - conda-forge::mahotas=1.4.19
   - conda-forge::numpy=2.5.5
   - conda-forge::pip=26.0.1
   - conda-forge::python=3.13.13
-  - conda-forge::pytorch-cpu=2.14.1
   - pip:
     - dask==2026.11.0
-    - pyvips-binary==8.18.7
-    - pyvips==3.2.0
+    - dask-image==2026.5.0
     - spatialdata==0.9.0
-    - torchstain==1.4.1
-    - wsidata==0.12.0
+    - squidpy==1.8.4
     - xarray==2026.9.0
