@@ -1,0 +1,63 @@
+nextflow_process {
+    name "Test LAZYSLIDE_FINDTISSUES"
+    script "../main.nf"
+    process "LAZYSLIDE_FINDTISSUES"
+
+    tag "modules"
+    tag "modules_local"
+    tag "lazyslide/findtissues"
+    tag "wsidata/ingest"
+
+    test("Write aligned tissue and blank masks") {
+        setup {
+            run("WSIDATA_INGEST") {
+                script "../../../wsidata/ingest/main.nf"
+                process {
+                    """
+                    def slides = ['tissue', 'blank'].collect { id ->
+                        def image = new java.awt.image.BufferedImage(300, 270, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                        def graphics = image.createGraphics()
+                        graphics.setColor(java.awt.Color.WHITE)
+                        graphics.fillRect(0, 0, image.width, image.height)
+                        if (id == 'tissue') {
+                            graphics.setColor(new java.awt.Color(185, 90, 160))
+                            graphics.fillOval(35, 45, 230, 180)
+                        }
+                        graphics.dispose()
+                        def source = java.nio.file.Files.createTempFile('lazyslide-' + id, '.tif')
+                        assert javax.imageio.ImageIO.write(image, 'tiff', source.toFile())
+                        [[id: id], source, [], 0.5]
+                    }
+                    input[0] = channel.fromList(slides)
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = WSIDATA_INGEST.out.slide
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def results = process.out.mask.sort { it[0].id }.collect { meta, mask ->
+                assert path(mask).fileName.toString() == "${meta.id}.tissue.zarr"
+                def root = path(path(mask).resolve('zarr.json').toString()).json
+                assert root.attributes.tissue_detection.method == 'otsu'
+                def labels = path(mask).resolve('labels/wsi_tissue')
+                def multiscale = path(labels.resolve('zarr.json').toString()).json.attributes.ome.multiscales[0]
+                def shapes = multiscale.datasets.collect { level ->
+                    path(labels.resolve(level.path).resolve('zarr.json').toString()).json.shape
+                }
+                assert shapes == [[270, 300], [135, 150]]
+                [meta.id, root.attributes.tissue_detection.has_tissue]
+            }
+            assert results == [['blank', false], ['tissue', true]]
+            assert snapshot(results).match()
+        }
+    }
+}

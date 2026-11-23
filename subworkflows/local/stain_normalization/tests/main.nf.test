@@ -17,7 +17,9 @@ nextflow_workflow {
                 def inputs = java.nio.file.Files.createTempDirectory('stain-normalization')
                 def query = java.nio.file.Files.createDirectory(inputs.resolve('query.zarr'))
                 def reference = java.nio.file.Files.createDirectory(inputs.resolve('reference.zarr'))
-                input[0] = channel.of([[id: 'query'], query], [[id: 'reference'], reference])
+                def query_mask = java.nio.file.Files.createDirectory(inputs.resolve('query.tissue.zarr'))
+                def reference_mask = java.nio.file.Files.createDirectory(inputs.resolve('reference.tissue.zarr'))
+                input[0] = channel.of([[id: 'query'], query, query_mask], [[id: 'reference'], reference, reference_mask])
                 input[1] = 'reinhard'
                 input[2] = 'reference'
                 """

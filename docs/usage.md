@@ -36,7 +36,9 @@ wsi = open_wsi(read_zarr("sample.normalized.zarr"), image_key="wsi")
 
 Macenko is the default. Set `--stain_normalization reinhard` or `--stain_normalization vahadane` to select another method. Pass an existing `sample` value with `--stain_reference` for any method.
 
-The pipeline fits the selected reference slide once and uses it to normalize every slide in the samplesheet, including the reference itself. Squidpy estimates stain statistics from tissue and preserves the background. Each normalized Zarr records the method, reference sample, and fitted statistics in its attributes. Slides with no detected tissue retain their original pixels.
+Before normalization, LazySlide detects tissue once per slide using Otsu thresholding on color saturation. The pipeline writes a binary `wsi_tissue` label to `<OUTDIR>/tissue_masks/<sample>.tissue.zarr` at the resolutions used for stain fitting and transformation.
+
+The pipeline fits the selected reference slide once and uses it to normalize every slide in the samplesheet, including the reference itself. Squidpy uses the precomputed masks to estimate stain statistics from tissue and preserve the background. Each normalized Zarr records the method, reference sample, and fitted statistics in its attributes. Slides with no detected tissue retain their original pixels.
 
 ## Running the pipeline
 

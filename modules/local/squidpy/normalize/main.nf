@@ -8,7 +8,7 @@ process SQUIDPY_NORMALIZE {
         : 'community.wave.seqera.io/library/mahotas_numpy_pip_python_pruned:019535063c082f89'}"
 
     input:
-    tuple val(meta), path(slide, stageAs: 'source.zarr')
+    tuple val(meta), path(slide, stageAs: 'source.zarr'), path(tissue_mask, stageAs: 'tissue.zarr')
     path fitted_reference, stageAs: 'reference.json'
     val method
     val fit_reference

@@ -11,8 +11,8 @@ input:
   - ch_slides:
       type: file
       description: |
-        Ingested WSIData stores containing RGB image pyramids.
-        Structure: [ val(meta), path(slide) ]
+        Ingested WSIData stores and their aligned tissue masks.
+        Structure: [ val(meta), path(slide), path(tissue_mask) ]
       pattern: "*.zarr"
   - method:
       type: string

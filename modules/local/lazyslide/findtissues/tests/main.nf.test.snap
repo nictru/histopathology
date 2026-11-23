@@ -1,0 +1,21 @@
+{
+    "Write aligned tissue and blank masks": {
+        "content": [
+            [
+                [
+                    "blank",
+                    false
+                ],
+                [
+                    "tissue",
+                    true
+                ]
+            ]
+        ],
+        "timestamp": "2026-11-23T20:43:54.23324",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

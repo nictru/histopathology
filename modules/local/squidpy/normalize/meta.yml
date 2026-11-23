@@ -19,6 +19,10 @@ input:
         type: directory
         description: WSIData store containing an RGB image under the wsi key.
         pattern: "*.zarr"
+    - tissue_mask:
+        type: directory
+        description: SpatialData store with a binary tissue label under the wsi_tissue key.
+        pattern: "*.tissue.zarr"
   - fitted_reference:
       type: file
       description: Fitted stain statistics used in apply mode. Pass an empty list in fit mode.

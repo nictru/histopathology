@@ -3,7 +3,7 @@ include { SQUIDPY_NORMALIZE                          } from '../../../modules/lo
 
 workflow STAIN_NORMALIZATION {
     take:
-    ch_slides    // channel: [ val(meta), path(slide) ]
+    ch_slides    // channel: [ val(meta), path(slide), path(tissue_mask) ]
     method       // value: stain normalization method
     reference_id // value: reference sample ID
 
@@ -12,7 +12,7 @@ workflow STAIN_NORMALIZATION {
         error("Set --stain_reference to a sample ID from the samplesheet.")
     }
     def ch_reference_slide = ch_slides
-        .filter { meta, _slide -> meta.id == reference_id }
+        .filter { meta, _slide, _tissue_mask -> meta.id == reference_id }
         .ifEmpty { error("Reference sample '${reference_id}' was not found in the samplesheet.") }
         .first()
 

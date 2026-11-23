@@ -4,6 +4,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 include { WSIDATA_INGEST         } from '../modules/local/wsidata/ingest/main'
+include { LAZYSLIDE_FINDTISSUES   } from '../modules/local/lazyslide/findtissues/main'
 include { STAIN_NORMALIZATION    } from '../subworkflows/local/stain_normalization/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
@@ -34,8 +35,9 @@ workflow HISTOPATHOLOGY {
         [meta, slide, meta.scene, meta.mpp]
     }
     WSIDATA_INGEST(ch_ingest)
+    LAZYSLIDE_FINDTISSUES(WSIDATA_INGEST.out.slide)
     STAIN_NORMALIZATION(
-        WSIDATA_INGEST.out.slide,
+        WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask),
         stain_normalization,
         stain_reference,
     )

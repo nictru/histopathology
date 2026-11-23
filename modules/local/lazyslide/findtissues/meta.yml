@@ -1,0 +1,69 @@
+name: lazyslide_findtissues
+description: Detect tissue in a WSIData Zarr using LazySlide and store an aligned binary label.
+keywords:
+  - histology
+  - tissue detection
+  - whole-slide imaging
+tools:
+  - lazyslide:
+      description: Whole-slide image analysis for digital pathology.
+      homepage: https://github.com/rendeirolab/LazySlide
+      documentation: https://lazyslide.readthedocs.io/
+      licence: ["MIT"]
+      identifier: biotools:lazyslide
+input:
+  - - meta:
+        type: map
+        description: Sample metadata containing the slide ID.
+    - slide:
+        type: directory
+        description: WSIData store with its RGB image under the wsi key.
+        pattern: "*.zarr"
+output:
+  mask:
+    - - meta:
+          type: map
+          description: Sample metadata containing the slide ID.
+      - "${prefix}.tissue.zarr":
+          type: directory
+          description: SpatialData store with an aligned binary label under the wsi_tissue key.
+          pattern: "*.tissue.zarr"
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+topics:
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/arm64:
+      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:db43fab34938f97a
+      build_id: bd-db43fab34938f97a_1
+      scan_id: sc-d1ac9e98800823a9_1
+    linux/amd64:
+      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:f73e7431e9863fc5
+      build_id: ""
+      scan_id: sc-d80ea829e35fd25a_1
+  singularity:
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:49f166537cc67256
+      build_id: bd-49f166537cc67256_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/db/db45dbc467e99281e5d93a9a2baa4e6e0645167e93588836bfe4948fcb75c660/data
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:c9b354593f881be1
+      build_id: bd-c9b354593f881be1_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/d5/d548d42355e0d2bf348d26eb274fc87e28bca784f7adb5ced1d9714adbc7c2a9/data
+  conda:
+    linux/arm64:
+      lock_file: modules/local/lazyslide/findtissues/.conda-lock/linux_arm64-bd-db43fab34938f97a_1.txt
+    linux/amd64:
+      lock_file: modules/local/lazyslide/findtissues/.conda-lock/linux_amd64-bd-c9b354593f881be1_1.txt
