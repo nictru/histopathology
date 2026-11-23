@@ -52,7 +52,7 @@
                 "stain_normalization": {
                     "type": "string",
                     "enum": ["macenko", "reinhard", "vahadane"],
-                    "default": "macenko",
+                    "default": "reinhard",
                     "description": "Method for normalizing the converted whole-slide images."
                 },
                 "stain_reference": {

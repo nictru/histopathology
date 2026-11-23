@@ -34,7 +34,7 @@ wsi = open_wsi(read_zarr("sample.normalized.zarr"), image_key="wsi")
 
 ## Stain normalization
 
-Macenko is the default. Set `--stain_normalization reinhard` or `--stain_normalization vahadane` to select another method. Pass an existing `sample` value with `--stain_reference` for any method.
+Reinhard is the default. Set `--stain_normalization macenko` or `--stain_normalization vahadane` to select another method. Pass an existing `sample` value with `--stain_reference` for any method.
 
 Before normalization, LazySlide detects tissue once per slide using Otsu thresholding on color saturation. The pipeline writes a binary `wsi_tissue` label to `<OUTDIR>/tissue_masks/<sample>.tissue.zarr` at the resolutions used for stain fitting and transformation.
 
