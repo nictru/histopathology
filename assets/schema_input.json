@@ -9,25 +9,28 @@
         "properties": {
             "sample": {
                 "type": "string",
-                "pattern": "^\\S+$",
-                "errorMessage": "Sample name must be provided and cannot contain spaces",
+                "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]*$",
+                "errorMessage": "Sample ID must start with a letter, number, or underscore and contain only letters, numbers, underscores, hyphens, or periods",
                 "meta": ["id"]
             },
-            "fastq_1": {
+            "slide": {
                 "type": "string",
                 "format": "file-path",
                 "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 1 must be provided, cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+                "pattern": "\\.(?:[tT][iI][fF]{1,2}|[jJ][pP][eE]?[gG]|[cC][zZ][iI])$",
+                "errorMessage": "Slide must be a TIFF, JPEG, or CZI file"
             },
-            "fastq_2": {
-                "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+            "scene": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Optional zero-based scene index for a Zeiss CZI slide"
+            },
+            "mpp": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Microns per pixel. Required for JPEG and optional for TIFF and CZI with calibrated metadata"
             }
         },
-        "required": ["sample", "fastq_1"]
+        "required": ["sample", "slide"]
     }
 }

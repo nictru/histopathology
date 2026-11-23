@@ -45,6 +45,7 @@ workflow NFCORE_HISTOPATHOLOGY {
         params.outdir,
     )
     emit:
+    slides         = HISTOPATHOLOGY.out.slides         // channel: [ val(meta), path(slide), path(report) ]
     multiqc_report = HISTOPATHOLOGY.out.multiqc_report // channel: /path/to/multiqc_report.html
 }
 /*

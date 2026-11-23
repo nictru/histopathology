@@ -30,6 +30,7 @@ process VIPS_TIFFSAVE {
         error("Unsafe output prefix: ${prefix}")
     }
     """
-    touch '${prefix}.tif' '${prefix}.ingest.json' versions.yml
+    touch '${prefix}.tif' '${prefix}.ingest.json'
+    echo '{}' > versions.yml
     """
 }

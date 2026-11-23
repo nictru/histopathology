@@ -1,0 +1,28 @@
+{
+    "Route mixed slide formats and combine the outputs": {
+        "content": [
+            [
+                [
+                    "czi",
+                    "czi.tif",
+                    "czi.ingest.json"
+                ],
+                [
+                    "jpeg",
+                    "jpeg.tif",
+                    "jpeg.ingest.json"
+                ],
+                [
+                    "tiff",
+                    "tiff.tif",
+                    "tiff.ingest.json"
+                ]
+            ]
+        ],
+        "timestamp": "2026-11-23T18:50:38.949028",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.7"
+        }
+    }
+}

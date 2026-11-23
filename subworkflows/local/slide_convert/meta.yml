@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: slide_convert
+description: Route TIFF, JPEG, and CZI slides to the appropriate converter and combine the results.
+keywords:
+  - histology
+  - whole-slide imaging
+  - tiff
+components:
+  - czi/totiff
+  - vips/tiffsave
+input:
+  - ch_slides:
+      type: file
+      description: |
+        Slides with an optional CZI scene and pixel size in microns.
+        Structure: [ val(meta), path(slide), val(scene), val(mpp) ]
+      pattern: "*.{czi,jpg,jpeg,tif,tiff}"
+output:
+  - slides:
+      type: file
+      description: |
+        Pyramidal BigTIFFs and their ingestion reports.
+        Structure: [ val(meta), path(slide), path(report) ]
+      pattern: "*.{tif,ingest.json}"
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"

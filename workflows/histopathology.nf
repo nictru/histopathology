@@ -3,6 +3,7 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+include { SLIDE_CONVERT          } from '../subworkflows/local/slide_convert/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -25,6 +26,8 @@ workflow HISTOPATHOLOGY {
     outdir
 
     main:
+
+    SLIDE_CONVERT(ch_samplesheet)
 
     def ch_versions = channel.empty()
     def ch_multiqc_files = channel.empty()
@@ -84,7 +87,9 @@ workflow HISTOPATHOLOGY {
             ]
         }
     )
-    emit:multiqc_report = MULTIQC.out.report.map { _meta, report -> [report] }.toList() // channel: /path/to/multiqc_report.html
+    emit:
+    slides         = SLIDE_CONVERT.out.slides // channel: [ val(meta), path(slide), path(report) ]
+    multiqc_report = MULTIQC.out.report.map { _meta, report -> [report] }.toList() // channel: /path/to/multiqc_report.html
     versions       = ch_versions                 // channel: [ path(versions.yml) ]
 }
 
