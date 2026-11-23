@@ -1,0 +1,12 @@
+{
+    "Stage the slide, tile grid, and model cache": {
+        "content": [
+            "sample.focuslitenn.zarr"
+        ],
+        "timestamp": "2026-11-23T21:05:10.352781",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

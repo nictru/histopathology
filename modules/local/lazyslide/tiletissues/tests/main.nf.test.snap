@@ -1,0 +1,23 @@
+{
+    "Tile tissue and retain an empty result for a blank slide": {
+        "content": [
+            [
+                [
+                    "blank",
+                    false,
+                    null
+                ],
+                [
+                    "tissue",
+                    true,
+                    0.5
+                ]
+            ]
+        ],
+        "timestamp": "2026-11-23T21:07:07.773459",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

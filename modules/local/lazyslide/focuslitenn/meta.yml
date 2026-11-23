@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
+name: lazyslide_focuslitenn
+description: Score tile focus with FocusLiteNN.
+keywords:
+  - histology
+  - focus scoring
+  - whole-slide imaging
+tools:
+  - lazyslide:
+      description: Whole-slide image analysis for digital pathology.
+      homepage: https://github.com/rendeirolab/LazySlide
+      documentation: https://lazyslide.readthedocs.io/
+      licence: ["MIT"]
+      identifier: biotools:lazyslide
+input:
+  - - meta:
+        type: map
+        description: Sample metadata containing the slide ID.
+    - slide:
+        type: directory
+        description: WSIData store with its RGB image under the wsi key.
+        pattern: "*.zarr"
+    - tiles:
+        type: directory
+        description: Matching SpatialData store with tile shapes and their WSIData tile specification.
+        pattern: "*.tiles.zarr"
+  - hf_cache:
+      type: directory
+      description: Hugging Face Hub cache for RendeiroLab/LazySlide-models with FocusLiteNN/FocusLiteNN_exported.pt2 and its main revision reference.
+output:
+  tiles:
+    - - meta:
+          type: map
+          description: Sample metadata containing the slide ID.
+      - "${prefix}.focuslitenn.zarr":
+          type: directory
+          description: SpatialData store with the original tile shapes and the focus score column.
+          pattern: "*.focuslitenn.zarr"
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+topics:
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/arm64:
+      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:db43fab34938f97a
+      build_id: bd-db43fab34938f97a_1
+      scan_id: sc-d1ac9e98800823a9_1
+    linux/amd64:
+      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:f73e7431e9863fc5
+      build_id: ""
+      scan_id: sc-d80ea829e35fd25a_1
+  singularity:
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:49f166537cc67256
+      build_id: bd-49f166537cc67256_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/db/db45dbc467e99281e5d93a9a2baa4e6e0645167e93588836bfe4948fcb75c660/data
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:c9b354593f881be1
+      build_id: bd-c9b354593f881be1_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/d5/d548d42355e0d2bf348d26eb274fc87e28bca784f7adb5ced1d9714adbc7c2a9/data
+  conda:
+    linux/arm64:
+      lock_file: modules/local/lazyslide/findtissues/.conda-lock/linux_arm64-bd-db43fab34938f97a_1.txt
+    linux/amd64:
+      lock_file: modules/local/lazyslide/findtissues/.conda-lock/linux_amd64-bd-c9b354593f881be1_1.txt

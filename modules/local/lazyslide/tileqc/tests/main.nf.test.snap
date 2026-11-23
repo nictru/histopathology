@@ -1,0 +1,21 @@
+{
+    "Score the tile grid and retain an empty result for a blank slide": {
+        "content": [
+            [
+                [
+                    "blank",
+                    false
+                ],
+                [
+                    "tissue",
+                    true
+                ]
+            ]
+        ],
+        "timestamp": "2026-11-23T21:06:51.103816",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

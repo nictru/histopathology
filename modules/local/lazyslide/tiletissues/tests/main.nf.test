@@ -1,0 +1,69 @@
+nextflow_process {
+    name "Test LAZYSLIDE_TILETISSUES"
+    script "../main.nf"
+    process "LAZYSLIDE_TILETISSUES"
+
+    tag "modules"
+    tag "modules_local"
+    tag "lazyslide/tiletissues"
+    tag "lazyslide/findtissues"
+    tag "wsidata/ingest"
+
+    test("Tile tissue and retain an empty result for a blank slide") {
+        setup {
+            run("WSIDATA_INGEST") {
+                script "../../../wsidata/ingest/main.nf"
+                process {
+                    """
+                    def samples = ['tissue', 'blank'].collect { id ->
+                        def image = new java.awt.image.BufferedImage(300, 270, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                        def graphics = image.createGraphics()
+                        graphics.setColor(java.awt.Color.WHITE)
+                        graphics.fillRect(0, 0, image.width, image.height)
+                        if (id == 'tissue') {
+                            graphics.setColor(new java.awt.Color(185, 90, 160))
+                            graphics.fillOval(35, 45, 230, 180)
+                        }
+                        graphics.dispose()
+                        def source = java.nio.file.Files.createTempFile('lazyslide-' + id, '.tif')
+                        assert javax.imageio.ImageIO.write(image, 'tiff', source.toFile())
+                        [[id: id], source, [], 0.5]
+                    }
+                    input[0] = channel.fromList(samples)
+                    """
+                }
+            }
+            run("LAZYSLIDE_FINDTISSUES") {
+                script "../../findtissues/main.nf"
+                process {
+                    """
+                    input[0] = WSIDATA_INGEST.out.slide
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                    input[0] = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask)
+                    input[1] = 64
+                    input[2] = 0.5
+                    input[3] = 0.25
+                    input[4] = 0.3
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def results = process.out.tiles.sort { it[0].id }.collect { meta, store ->
+                def attrs = path(path(store).resolve('zarr.json').toString()).json.attributes
+                def shapes = java.nio.file.Files.isDirectory(path(store).resolve('shapes/tiles'))
+                [meta.id, shapes, attrs.tile_spec.tiles?.mpp]
+            }
+            assert results == [['blank', false, null], ['tissue', true, 0.5]]
+            assert snapshot(results).match()
+        }
+    }
+}
