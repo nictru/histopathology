@@ -1,0 +1,76 @@
+name: vips_tiffsave
+description: Convert a flat RGB TIFF or JPEG to a LazySlide-readable pyramidal BigTIFF.
+keywords:
+  - histology
+  - whole-slide imaging
+  - tiff
+tools:
+  - libvips:
+      description: Demand-driven image processing library.
+      homepage: https://www.libvips.org/
+      documentation: https://www.libvips.org/API/current/method.Image.tiffsave.html
+      licence: ["LGPL v2.1+"]
+      identifier: ""
+input:
+  - - meta:
+        type: map
+        description: Sample metadata containing the slide ID.
+    - slide:
+        type: file
+        description: Flat, 8-bit RGB TIFF or JPEG slide in its native orientation.
+        pattern: "*.{tif,tiff,jpg,jpeg}"
+    - mpp:
+        type: string
+        description: Verified microns per pixel. Pass an empty string to use the TIFF resolution tags.
+output:
+  slide:
+    - - meta:
+          type: map
+          description: Sample metadata containing the slide ID.
+      - "${prefix}.tif":
+          type: file
+          description: Lossless tiled pyramidal BigTIFF.
+          pattern: "*.tif"
+      - "${prefix}.ingest.json":
+          type: file
+          description: Conversion report with source origin, calibration, and verified pyramid dimensions.
+          pattern: "*.ingest.json"
+  versions:
+    - "versions.yml":
+        type: file
+        description: Software versions.
+        pattern: "versions.yml"
+topics:
+  versions:
+    - "versions.yml":
+        type: file
+        description: Software versions.
+        pattern: "versions.yml"
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/amd64:
+      name: community.wave.seqera.io/library/pip_python_openslide-bin_openslide-python_pruned:1754049372e890cd
+      build_id: bd-1754049372e890cd_1
+      scan_id: sc-fdd367d7377e750a_1
+    linux/arm64:
+      name: community.wave.seqera.io/library/pip_python_openslide-bin_openslide-python_pruned:29a7d547f1a27777
+      build_id: bd-29a7d547f1a27777_2
+      scan_id: sc-8876ef8e96025d82_1
+  singularity:
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/pip_python_openslide-bin_openslide-python_pruned:c074814f61a4f727
+      build_id: bd-c074814f61a4f727_2
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/1e/1ea398788b2754d197335271055c3375c47965b1ab85dbc61df852c6b0eefde4/data
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/pip_python_openslide-bin_openslide-python_pruned:26700c61a869d3a0
+      build_id: bd-26700c61a869d3a0_2
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/8f/8fdbae2544629ef5a4b6df6f3b97d770a934d0ce7974a93f4f15bc5e5b7ac9b5/data
+  conda:
+    linux/amd64:
+      lock_file: modules/local/vips/tiffsave/.conda-lock/linux_amd64-bd-1754049372e890cd_1.txt
+    linux/arm64:
+      lock_file: modules/local/vips/tiffsave/.conda-lock/linux_arm64-bd-29a7d547f1a27777_2.txt

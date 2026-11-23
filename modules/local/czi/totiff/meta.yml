@@ -1,0 +1,85 @@
+name: czi_totiff
+description: Convert a brightfield Zeiss CZI to a LazySlide-readable pyramidal BigTIFF.
+keywords:
+  - histology
+  - whole-slide imaging
+  - tiff
+tools:
+  - pylibCZIrw:
+      description: Zeiss Python bindings for reading and writing CZI files.
+      homepage: https://github.com/ZEISS/pylibczirw
+      documentation: https://zeiss.github.io/pylibczirw/
+      licence: ["LGPL v3"]
+      identifier: ""
+  - libvips:
+      description: Demand-driven image processing library.
+      homepage: https://www.libvips.org/
+      documentation: https://www.libvips.org/API/current/method.Image.tiffsave.html
+      licence: ["LGPL v2.1+"]
+      identifier: ""
+input:
+  - - meta:
+        type: map
+        description: Sample metadata containing the slide ID.
+    - slide:
+        type: file
+        description: Single-plane 8-bit brightfield Zeiss CZI slide.
+        pattern: "*.czi"
+    - mpp:
+        type: string
+        description: Verified microns per pixel. Pass an empty string to use the CZI X/Y calibration.
+    - scene:
+        type: string
+        description: Zeiss scene index. Pass an empty string for a slide with zero or one scene.
+output:
+  slide:
+    - - meta:
+          type: map
+          description: Sample metadata containing the slide ID.
+      - "${prefix}.tif":
+          type: file
+          description: Lossless tiled pyramidal BigTIFF.
+          pattern: "*.tif"
+      - "${prefix}.ingest.json":
+          type: file
+          description: Conversion report with source origin, calibration, and verified pyramid dimensions.
+          pattern: "*.ingest.json"
+  versions:
+    - "versions.yml":
+        type: file
+        description: Software versions.
+        pattern: "versions.yml"
+topics:
+  versions:
+    - "versions.yml":
+        type: file
+        description: Software versions.
+        pattern: "versions.yml"
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/amd64:
+      name: community.wave.seqera.io/library/pip_python_openslide-bin_openslide-python_pruned:e9a5fd377ca7bd3e
+      build_id: bd-e9a5fd377ca7bd3e_1
+      scan_id: sc-94b9eff3690839e8_1
+    linux/arm64:
+      name: community.wave.seqera.io/library/pip_python_openslide-bin_openslide-python_pruned:f39999f1799c9d00
+      build_id: bd-f39999f1799c9d00_2
+      scan_id: sc-50518edd282a00bc_1
+  singularity:
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/pip_python_openslide-bin_openslide-python_pruned:f877f56a08f7b247
+      build_id: bd-f877f56a08f7b247_2
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/3e/3e2ae61a86eff04763d8258feff476a6f7d781e175db17815d361394f60790d4/data
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/pip_python_openslide-bin_openslide-python_pruned:77c760fbf4758fae
+      build_id: bd-77c760fbf4758fae_2
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/73/73978427c0129b9ecc020cc7463c3f632b776e215005228fe75801a998ae3d0a/data
+  conda:
+    linux/amd64:
+      lock_file: modules/local/czi/totiff/.conda-lock/linux_amd64-bd-e9a5fd377ca7bd3e_1.txt
+    linux/arm64:
+      lock_file: modules/local/czi/totiff/.conda-lock/linux_arm64-bd-f39999f1799c9d00_2.txt

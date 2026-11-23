@@ -1,0 +1,37 @@
+{
+    "Export one scene and preserve its canvas origin and calibration": {
+        "content": [
+            {
+                "format": "pyramidal-bigtiff",
+                "reader": "openslide",
+                "scene": 0,
+                "source_origin_xy": [
+                    31,
+                    -15
+                ],
+                "background_rgb": [
+                    255,
+                    255,
+                    255
+                ],
+                "mpp": 0.5,
+                "mpp_source": "czi_scaling",
+                "level_shapes_yx": [
+                    [
+                        301,
+                        513
+                    ],
+                    [
+                        150,
+                        256
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-11-23T18:19:37.727085",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.7"
+        }
+    }
+}
