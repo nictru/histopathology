@@ -43,6 +43,25 @@
                 }
             }
         },
+        "stain_normalization_options": {
+            "title": "Stain normalization options",
+            "type": "object",
+            "fa_icon": "fas fa-palette",
+            "description": "Select the stain normalization method and reference sample.",
+            "properties": {
+                "stain_normalization": {
+                    "type": "string",
+                    "enum": ["macenko", "reinhard", "reinhardmodified"],
+                    "default": "macenko",
+                    "description": "Method for normalizing the converted whole-slide images."
+                },
+                "reinhard_reference": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]*$",
+                    "description": "Samplesheet sample ID used to fit the reference for Reinhard or Modified Reinhard."
+                }
+            }
+        },
         "institutional_config_options": {
             "title": "Institutional config options",
             "type": "object",
@@ -197,6 +216,9 @@
     "allOf": [
         {
             "$ref": "#/$defs/input_output_options"
+        },
+        {
+            "$ref": "#/$defs/stain_normalization_options"
         },
         {
             "$ref": "#/$defs/institutional_config_options"

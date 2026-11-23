@@ -1,0 +1,75 @@
+name: wsidata_ingest
+description: Read a raw slide with a registered WSIData reader and persist its RGB pyramid as SpatialData Zarr.
+keywords:
+  - histology
+  - whole-slide imaging
+  - zarr
+tools:
+  - wsidata:
+      description: Whole-slide image readers and SpatialData storage.
+      homepage: https://github.com/rendeirolab/wsidata
+      documentation: https://wsidata.readthedocs.io/
+      licence: ["MIT"]
+      identifier: ""
+input:
+  - - meta:
+        type: map
+        description: Sample metadata containing the slide ID.
+    - slide:
+        type: file
+        description: Original CZI, TIFF, or JPEG slide.
+        pattern: "*.{czi,tif,tiff,jpg,jpeg}"
+    - scene:
+        type: integer
+        description: Zero-based CZI scene index, or an empty value for a single-scene input.
+    - mpp:
+        type: float
+        description: Pixel size override in microns, or an empty value to read the source calibration.
+output:
+  slide:
+    - - meta:
+          type: map
+          description: Sample metadata containing the slide ID.
+      - "${prefix}.zarr":
+          type: directory
+          description: Self-contained WSIData store with the image saved under the wsi key.
+          pattern: "*.zarr"
+  versions:
+    - "versions.yml":
+        type: file
+        description: Software versions.
+        pattern: "versions.yml"
+topics:
+  versions:
+    - "versions.yml":
+        type: file
+        description: Software versions.
+        pattern: "versions.yml"
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/arm64:
+      name: community.wave.seqera.io/library/bftools_openjdk_pip_python_pruned:4703c033b2c3fb06
+      build_id: bd-4703c033b2c3fb06_1
+      scan_id: sc-87fa819b2541b5e5_1
+    linux/amd64:
+      name: community.wave.seqera.io/library/bftools_openjdk_pip_python_pruned:e221d8d40eec43ef
+      build_id: bd-e221d8d40eec43ef_1
+      scan_id: sc-27b049a2726fe0ed_1
+  singularity:
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/bftools_openjdk_pip_python_pruned:bd622bcca99d7f72
+      build_id: bd-bd622bcca99d7f72_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/a2/a2dbae1762777c350746068060567d6a753c06149c44191357d5fa837e0417d5/data
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/bftools_openjdk_pip_python_pruned:1b379270c9e3d41e
+      build_id: bd-1b379270c9e3d41e_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/8c/8cd0517559b7bfc398a13c4aee2b347f91d6ba1753c3471ac068bbef6705acbb/data
+  conda:
+    linux/amd64:
+      lock_file: modules/local/wsidata/ingest/.conda-lock/linux_amd64-bd-e221d8d40eec43ef_1.txt
+    linux/arm64:
+      lock_file: modules/local/wsidata/ingest/.conda-lock/linux_arm64-bd-4703c033b2c3fb06_1.txt

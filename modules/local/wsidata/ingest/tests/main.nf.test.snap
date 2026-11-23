@@ -1,0 +1,103 @@
+{
+    "Export one scene and preserve its canvas origin and calibration": {
+        "content": [
+            {
+                "format": "wsidata-zarr",
+                "reader": "pylibczi",
+                "scene": 0,
+                "source_origin_xy": [
+                    31,
+                    -15
+                ],
+                "mpp": 0.5,
+                "mpp_source": "slide_metadata",
+                "level_shapes_yx": [
+                    [
+                        301,
+                        513
+                    ],
+                    [
+                        150,
+                        256
+                    ],
+                    [
+                        75,
+                        128
+                    ],
+                    [
+                        37,
+                        64
+                    ],
+                    [
+                        18,
+                        32
+                    ],
+                    [
+                        9,
+                        16
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-11-23T20:06:41.858827",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.7"
+        }
+    },
+    "Convert a JPEG and a flat TIFF with supplied calibration": {
+        "content": [
+            [
+                {
+                    "source": "flat image.jpg",
+                    "format": "wsidata-zarr",
+                    "reader": "bioformats",
+                    "scene": null,
+                    "source_origin_xy": [
+                        0,
+                        0
+                    ],
+                    "mpp": 0.5,
+                    "mpp_source": "override",
+                    "level_shapes_yx": [
+                        [
+                            301,
+                            513
+                        ],
+                        [
+                            150,
+                            256
+                        ]
+                    ]
+                },
+                {
+                    "source": "flat_rgb.tif",
+                    "format": "wsidata-zarr",
+                    "reader": "tiffslide",
+                    "scene": null,
+                    "source_origin_xy": [
+                        0,
+                        0
+                    ],
+                    "mpp": 0.5,
+                    "mpp_source": "override",
+                    "level_shapes_yx": [
+                        [
+                            301,
+                            513
+                        ],
+                        [
+                            150,
+                            256
+                        ]
+                    ]
+                }
+            ]
+        ],
+        "timestamp": "2026-11-23T20:07:03.553724",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.7"
+        }
+    }
+}

@@ -21,7 +21,22 @@ Pass a CSV file to `--input` with one row per slide. Give each slide a unique sa
 
 See the [example samplesheet](../assets/samplesheet.csv).
 
-The pipeline writes one pyramidal BigTIFF and one ingestion report per slide to `<OUTDIR>/slides/`.
+The pipeline reads CZI, TIFF, and JPEG through WSIData's pylibCZI, TiffSlide, and Bio-Formats readers, respectively. It writes a self-contained `<sample>.zarr` to `<OUTDIR>/slides/`. The store contains the RGB image under the `wsi` key. Its attributes record the pixel calibration and the original CZI scene origin when applicable. The pylibCZI reader fills gaps in a CZI scene with black pixels.
+
+Normalization reads the ingested Zarr and writes `<sample>.normalized.zarr` and its report to `<OUTDIR>/normalized_slides/`. Reopen either store with WSIData.
+
+```python
+from spatialdata import read_zarr
+from wsidata import open_wsi
+
+wsi = open_wsi(read_zarr("sample.normalized.zarr"), image_key="wsi")
+```
+
+## Stain normalization
+
+Macenko is the default. To use Reinhard or Modified Reinhard, set `--stain_normalization reinhard` or `--stain_normalization reinhardmodified` and pass an existing `sample` value with `--reinhard_reference`.
+
+The pipeline fits the selected reference slide once and uses it to normalize every slide in the samplesheet, including the reference itself. It stores the fitted Lab statistics in `<OUTDIR>/normalized_slides/<sample>.reinhard_reference.json`.
 
 ## Running the pipeline
 

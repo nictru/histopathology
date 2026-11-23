@@ -3,7 +3,8 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-include { SLIDE_CONVERT          } from '../subworkflows/local/slide_convert/main'
+include { WSIDATA_INGEST         } from '../modules/local/wsidata/ingest/main'
+include { STAIN_NORMALIZATION    } from '../subworkflows/local/stain_normalization/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -20,6 +21,8 @@ workflow HISTOPATHOLOGY {
 
     take:
     ch_samplesheet // channel: samplesheet read in from --input
+    stain_normalization
+    reinhard_reference
     multiqc_config
     multiqc_logo
     multiqc_methods_description
@@ -27,7 +30,15 @@ workflow HISTOPATHOLOGY {
 
     main:
 
-    SLIDE_CONVERT(ch_samplesheet)
+    def ch_ingest = ch_samplesheet.map { meta, slide ->
+        [meta, slide, meta.scene, meta.mpp]
+    }
+    WSIDATA_INGEST(ch_ingest)
+    STAIN_NORMALIZATION(
+        WSIDATA_INGEST.out.slide,
+        stain_normalization,
+        reinhard_reference,
+    )
 
     def ch_versions = channel.empty()
     def ch_multiqc_files = channel.empty()
@@ -88,9 +99,10 @@ workflow HISTOPATHOLOGY {
         }
     )
     emit:
-    slides         = SLIDE_CONVERT.out.slides // channel: [ val(meta), path(slide), path(report) ]
-    multiqc_report = MULTIQC.out.report.map { _meta, report -> [report] }.toList() // channel: /path/to/multiqc_report.html
-    versions       = ch_versions                 // channel: [ path(versions.yml) ]
+    slides            = WSIDATA_INGEST.out.slide                                  // channel: [ val(meta), path(slide) ]
+    normalized_slides = STAIN_NORMALIZATION.out.slides                            // channel: [ val(meta), path(slide), path(report) ]
+    multiqc_report    = MULTIQC.out.report.map { _meta, report -> [report] }.toList() // channel: /path/to/multiqc_report.html
+    versions          = ch_versions                                              // channel: [ path(versions.yml) ]
 }
 
 /*

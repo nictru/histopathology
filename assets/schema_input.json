@@ -23,12 +23,14 @@
             "scene": {
                 "type": "integer",
                 "minimum": 0,
-                "description": "Optional zero-based scene index for a Zeiss CZI slide"
+                "description": "Optional zero-based scene index for a Zeiss CZI slide",
+                "meta": ["scene"]
             },
             "mpp": {
                 "type": "number",
                 "exclusiveMinimum": 0,
-                "description": "Microns per pixel. Required for JPEG and optional for TIFF and CZI with calibrated metadata"
+                "description": "Microns per pixel. Required for JPEG and optional for TIFF and CZI with calibrated metadata",
+                "meta": ["mpp"]
             }
         },
         "required": ["sample", "slide"]

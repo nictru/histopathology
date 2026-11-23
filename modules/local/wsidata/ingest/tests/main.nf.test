@@ -1,0 +1,131 @@
+nextflow_process {
+    name "Test WSIDATA_INGEST"
+    script "../main.nf"
+    process "WSIDATA_INGEST"
+
+    tag "modules"
+    tag "modules_local"
+    tag "wsidata/ingest"
+
+    // Gzipped synthetic CZI. Scene 0 contains two RGB blocks with a gap,
+    // origin [31, -15], extent 513 x 301 and calibration 0.5 µm/px.
+    // Scene 1 is a separate 8 x 12 block. Pixels were written with pylibCZIrw.
+    def fixture =
+        'H4sIAAAAAAAC/+3Wz2/b1h0AcCkukhbtfcd4BXpUKNuKHQ8sMVlyASHRMliMY+sSUBajCZCVwFbRH4c2hxYFut12GLDDsFOxP6P/' +
+        'xS7B0NN2XS67DRop0r8CNcCwrkXRz8Pn+cv35ZfPD4+k6X6nt9d8+F7n3m6laNeuxmrlavvkn5+/9fu/BN989fDWv//2j3ffeXmc' +
+        '1/zyT9cXtc/+eL2i/bhbf/F89B7s7Ny737qb3dM3Vhb5ozI+Kutee70Yt/fzuHpt2Vw3sn6Q9ZtZf17m8niY9Rfz+bxWPmx57Fau' +
+        'Pn957C/JtZbk4iW53pLcd9HC7m7cbDfjZhTGyeg0CvfS2Xgyno46wyjdSo7qg/qw1hjcadQa9cFRbXu4sVlb3x4MttLtwfZgcysM' +
+        'Ll0QBsUcwfmkz+6uAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+        'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+        'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8BNXeVXrd3p7zYe9Bzs79+637maJ' +
+        '360s8n//bREflXVffFmM2/t5/PrNlSVz3cj6QdZvViuVarXI5fEwiy/m83mtzOWxm58re6WM/UvHZ7G1JBcvyfWW5L6LFnZ342a7' +
+        'GTejME5Gp1G4l87Gk/F01BlGW8Nk/fbj4aA2HDSGtcbRYFgbDO8Mahvrg8baIFlPG/U7YXDpgjAo5gjOJ41/9lcAAAAAAAAAAAAA' +
+        'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+        'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+        'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOCHVfnW1u/09poP' +
+        'ew92du7db92tVJ5dK/KflvFRWbdaLWJ7fyX7+c0fri+Z60bWD/LarOT1MpfHw6z/az6fv1Xm8tgtj6uXYn9JrrUkFy/J9cpYfenc' +
+        '/9rC7m7cbDfjZhTGyeg0CvfS2Xgyno46w2jj9nZS36intbWttaTWaGw2atvbj5Pa2u31QT3Z3mxsDodhcOmCMCjmCM4n/bn2ylY+' +
+        'n2f7Van8eaW4L+fxWuUn3cLOcTJK20+O3j9Op7Mo7KazZJjMkijsTB8/OTlOZuMn06ioisLe+OP0INra2gqD4nCROYw26mtF5rDI' +
+        '9KNy3C/GrbNxqxjHZ+O4GPei9WLcK8bds3E3CtvjbGWn2SqyB7/1m2Q6TScXR6ud4btvl8e/qL8dhb8ef5hO4o+eptHO6GS9EQYX' +
+        'iTAoCy+O8nfp8vyvvLrcg4u9isezSRq1+p3svVwchq0nx4tTTz+ajAfZiZMPVkfpND1JZmn2Jp+dzX7n+RzNp08n46Nyl3+VHKeX' +
+        'rg2DRSLcT0/y9UWbt9Zu1cPgbBgGVy4Ortyw3lGS/9HI7twsPT7Nd/F0lkyP0sWGHWQbtZ9M3k+j22mtnt3MYpDvRVH1Uv3hf1nf' +
+        'P6+vL6sNyjUF54sMLh674OoDWby/7c7ebiu+v3d4/r5+VsaVH/j9Kb5nq0v/ipx9z25m/XmZe15+z15k37Na+ZHJ4//je/Zyrljr' +
+        '12+uvGqtWWG1vCiP37bW6vey1h///wn/AQz8udwAoQYA'
+
+    test("Export one scene and preserve its canvas origin and calibration") {
+        when {
+            process {
+                """
+                def source = java.nio.file.Files.createTempFile('synthetic', '.czi')
+                source.toFile().deleteOnExit()
+                def bytes = java.util.Base64.getDecoder().decode('$fixture')
+                new java.util.zip.GZIPInputStream(new ByteArrayInputStream(bytes)).withCloseable {
+                    java.nio.file.Files.write(source, it.readAllBytes())
+                }
+                input[0] = channel.of([[id: 'czi'], file(source), 0, []])
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.versions.every { path(it).yaml.WSIDATA_INGEST['pylibCZIrw'] }
+            def (meta, image) = process.out.slide[0]
+            assert meta.id == 'czi'
+            assert path(image).fileName.toString() == 'czi.zarr'
+            assert java.nio.file.Files.isDirectory(path(image).resolve('images/wsi'))
+            def result = path(path(image).resolve('zarr.json').toString()).json.attributes.ingestion
+            assert result.scene == 0
+            assert result.source_origin_xy == [31, -15]
+            assert result.mpp == 0.5
+            assert result.level_shapes_yx[0] == [301, 513]
+            assert result.level_shapes_yx.size() > 1
+            result.remove('source')
+            assert snapshot(result).match()
+        }
+    }
+
+    test("Require a scene for a multi-scene CZI") {
+        when {
+            process {
+                """
+                def source = java.nio.file.Files.createTempFile('synthetic', '.czi')
+                source.toFile().deleteOnExit()
+                def bytes = java.util.Base64.getDecoder().decode('$fixture')
+                new java.util.zip.GZIPInputStream(new ByteArrayInputStream(bytes)).withCloseable {
+                    java.nio.file.Files.write(source, it.readAllBytes())
+                }
+                input[0] = channel.of([[id: 'czi'], file(source), [], []])
+                """
+            }
+        }
+
+        then {
+            assert process.failed
+            assert process.errorReport.contains("Specify a scene for this CZI")
+        }
+    }
+
+    test("Convert a JPEG and a flat TIFF with supplied calibration") {
+        when {
+            process {
+                """
+                def fixtures = java.nio.file.Files.createTempDirectory('vips-tiffsave')
+                fixtures.toFile().deleteOnExit()
+                def image = new java.awt.image.BufferedImage(513, 301, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                def graphics = image.createGraphics()
+                graphics.setColor(new java.awt.Color(32, 75, 128))
+                graphics.fillRect(0, 0, 256, 301)
+                graphics.setColor(new java.awt.Color(215, 23, 84))
+                graphics.fillRect(256, 0, 257, 301)
+                graphics.dispose()
+                def jpeg = fixtures.resolve('flat image.jpg').toFile()
+                def tiff = fixtures.resolve('flat_rgb.tif').toFile()
+                jpeg.deleteOnExit()
+                tiff.deleteOnExit()
+                assert javax.imageio.ImageIO.write(image, 'jpeg', jpeg)
+                assert javax.imageio.ImageIO.write(image, 'tiff', tiff)
+                input[0] = channel.of(
+                    [[id: 'jpeg'], file(jpeg), [], 0.5],
+                    [[id: 'tiff'], file(tiff), [], 0.5],
+                )
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.versions.every { path(it).yaml.WSIDATA_INGEST.wsidata == '0.12.0' }
+            def reports = process.out.slide.sort { it[0].id }.collect { meta, image ->
+                assert path(image).fileName.toString() == "${meta.id}.zarr"
+                assert java.nio.file.Files.isDirectory(path(image).resolve("images/wsi"))
+                def result = path(path(image).resolve('zarr.json').toString()).json.attributes.ingestion
+                assert result.mpp == 0.5
+                assert result.level_shapes_yx[0] == [301, 513]
+                assert result.level_shapes_yx.size() > 1
+                result
+            }
+            assert snapshot(reports).match()
+        }
+    }
+}

@@ -1,0 +1,43 @@
+nextflow_workflow {
+    name "Test Subworkflow STAIN_NORMALIZATION"
+    script "../main.nf"
+    workflow "STAIN_NORMALIZATION"
+
+    tag "subworkflows"
+    tag "subworkflows_local"
+    tag "subworkflows/stain_normalization"
+    tag "torchstain/reinhard"
+
+    test("Fit the selected sample once and normalize every slide") {
+        options "-stub-run"
+
+        when {
+            workflow {
+                """
+                def inputs = java.nio.file.Files.createTempDirectory('stain-normalization')
+                def query = java.nio.file.Files.createDirectory(inputs.resolve('query.zarr'))
+                def reference = java.nio.file.Files.createDirectory(inputs.resolve('reference.zarr'))
+                input[0] = channel.of([[id: 'query'], query], [[id: 'reference'], reference])
+                input[1] = 'reinhard'
+                input[2] = 'reference'
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+            def tasks = workflow.trace.tasks().collect { it.name.tokenize(':').last() }.sort()
+            assert tasks == [
+                'TORCHSTAIN_REINHARD (query)',
+                'TORCHSTAIN_REINHARD (reference)',
+                'TORCHSTAIN_REINHARD_FIT (reference)',
+            ]
+            def slides = workflow.out.slides.collect { meta, slide, _report ->
+                [meta.id, path(slide).fileName.toString()]
+            }.sort { it[0] }
+            def (meta, reference) = workflow.out.reference[0]
+            assert meta.id == 'reference'
+            assert snapshot(slides, path(reference).fileName.toString()).match()
+        }
+    }
+}

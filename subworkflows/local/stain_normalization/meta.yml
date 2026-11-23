@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: stain_normalization
+description: Normalize ingested histology slides with Macenko, Reinhard, or Modified Reinhard.
+keywords:
+  - histology
+  - stain normalization
+  - whole-slide imaging
+components:
+  - torchstain/macenko
+  - torchstain/reinhard
+input:
+  - ch_slides:
+      type: file
+      description: |
+        Ingested WSIData stores containing RGB image pyramids.
+        Structure: [ val(meta), path(slide) ]
+      pattern: "*.zarr"
+  - method:
+      type: string
+      description: "Stain normalization method: macenko, reinhard, or reinhardmodified."
+  - reference_id:
+      type: string
+      description: Sample ID of the ingested slide used as the reference for either Reinhard method.
+output:
+  - slides:
+      type: file
+      description: |
+        Normalized WSIData stores and their normalization reports.
+        Structure: [ val(meta), path(slide), path(report) ]
+      pattern: "*.{normalized.zarr,normalization.json}"
+  - reference:
+      type: file
+      description: |
+        Fitted reference statistics for either Reinhard method.
+        Structure: [ val(meta), path(reference) ]
+      pattern: "*.reinhard_reference.json"
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"

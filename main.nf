@@ -39,14 +39,17 @@ workflow NFCORE_HISTOPATHOLOGY {
     //
     HISTOPATHOLOGY (
         samplesheet,
+        params.stain_normalization,
+        params.reinhard_reference?.toString(),
         params.multiqc_config,
         params.multiqc_logo,
         params.multiqc_methods_description,
         params.outdir,
     )
     emit:
-    slides         = HISTOPATHOLOGY.out.slides         // channel: [ val(meta), path(slide), path(report) ]
-    multiqc_report = HISTOPATHOLOGY.out.multiqc_report // channel: /path/to/multiqc_report.html
+    slides            = HISTOPATHOLOGY.out.slides            // channel: [ val(meta), path(slide) ]
+    normalized_slides = HISTOPATHOLOGY.out.normalized_slides // channel: [ val(meta), path(slide), path(report) ]
+    multiqc_report    = HISTOPATHOLOGY.out.multiqc_report    // channel: /path/to/multiqc_report.html
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

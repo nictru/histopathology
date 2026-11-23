@@ -1,0 +1,59 @@
+{
+    "Normalize an ingested WSIData store and record a blank-slide fallback": {
+        "content": [
+            [
+                {
+                    "source": "blank.zarr",
+                    "mpp": 0.5,
+                    "level_shapes_yx": [
+                        [
+                            301,
+                            513
+                        ],
+                        [
+                            150,
+                            256
+                        ]
+                    ],
+                    "method": "macenko",
+                    "backend": "numpy/libvips",
+                    "calibration_patch_count": 64,
+                    "reference": "torchstain_default",
+                    "brightness_percentile": 95,
+                    "light_intensity": 255,
+                    "alpha": 1,
+                    "beta": 0.15,
+                    "fallback": "insufficient_tissue"
+                },
+                {
+                    "source": "tissue.zarr",
+                    "mpp": 0.5,
+                    "level_shapes_yx": [
+                        [
+                            301,
+                            513
+                        ],
+                        [
+                            150,
+                            256
+                        ]
+                    ],
+                    "method": "macenko",
+                    "backend": "numpy/libvips",
+                    "calibration_patch_count": 64,
+                    "reference": "torchstain_default",
+                    "brightness_percentile": 95,
+                    "light_intensity": 255,
+                    "alpha": 1,
+                    "beta": 0.15,
+                    "fallback": null
+                }
+            ]
+        ],
+        "timestamp": "2026-11-23T20:02:07.857442",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.7"
+        }
+    }
+}
