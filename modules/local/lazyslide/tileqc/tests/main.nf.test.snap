@@ -1,4 +1,14 @@
 {
+    "Stage a focuslitenn checkpoint": {
+        "content": [
+            "sample.focuslitenn.zarr"
+        ],
+        "timestamp": "2026-11-23T21:49:08.560313",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    },
     "Score the tile grid and retain an empty result for a blank slide": {
         "content": [
             [
@@ -13,6 +23,16 @@
             ]
         ],
         "timestamp": "2026-11-23T21:06:51.103816",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    },
+    "Stage a pathprofilerqc checkpoint": {
+        "content": [
+            "sample.pathprofilerqc.zarr"
+        ],
+        "timestamp": "2026-11-23T21:49:14.692648",
         "meta": {
             "nf-test": "0.9.4",
             "nextflow": "26.10.7"

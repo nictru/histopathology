@@ -27,10 +27,10 @@ process LAZYSLIDE_TILETISSUES {
         error("Unsafe output prefix: ${prefix}")
     }
     pixels = tile_px.toString().toInteger()
-    resolution = mpp.toString().toBigDecimal()
+    resolution = mpp in [null, ''] ? '' : mpp.toString().toBigDecimal()
     tile_overlap = overlap.toString().toBigDecimal()
     background = background_fraction.toString().toBigDecimal()
-    if (pixels <= 0 || resolution <= 0 || tile_overlap < 0 || tile_overlap >= 1 || background < 0 || background > 1) {
+    if (pixels <= 0 || (resolution != '' && resolution <= 0) || tile_overlap < 0 || tile_overlap >= 1 || background < 0 || background > 1) {
         error('Expected positive tile size and MPP, overlap in [0, 1), and background fraction in [0, 1].')
     }
     template('lazyslide_tiletissues.py')

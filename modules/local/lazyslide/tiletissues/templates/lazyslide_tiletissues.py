@@ -6,12 +6,14 @@ from pathlib import Path
 
 import dask
 from lazyslide import open_wsi, pp
+from shapely import box
 from spatialdata import SpatialData, read_zarr, to_polygons, transform
 from wsidata.io import add_tissues
 from xarray import DataTree
 
 slide = open_wsi(read_zarr("source.zarr"), image_key="wsi")
 mask = read_zarr("tissue.zarr")
+resolution = "${resolution}"
 if mask.attrs["tissue_detection"]["has_tissue"]:
     label = mask.labels["wsi_tissue"]
     if isinstance(label, DataTree):
@@ -26,13 +28,20 @@ if mask.attrs["tissue_detection"]["has_tissue"]:
         pp.tile_tissues(
             slide,
             int("${pixels}"),
-            mpp=float("${resolution}"),
+            mpp=float(resolution) if resolution else None,
             overlap=float("${tile_overlap}"),
             background_fraction=float("${background}"),
         )
 
-shapes = {"tiles": slide.shapes["tiles"]} if "tiles" in slide.shapes else {}
-attrs = {"tile_spec": slide.attrs.get("tile_spec", {})}
+shapes = {}
+if "tiles" in slide.shapes:
+    # A tissue fragment smaller than a tile can produce a tile past the slide edge.
+    height, width = slide.properties.shape
+    tiles = slide.shapes["tiles"]
+    tiles = tiles.loc[tiles.geometry.covered_by(box(0, 0, width, height))].reset_index(drop=True)
+    if len(tiles):
+        shapes["tiles"] = tiles
+attrs = {"tile_spec": slide.attrs["tile_spec"] if shapes else {}}
 SpatialData(shapes=shapes, attrs=attrs).write("${prefix}.tiles.zarr")
 
 versions = {name: version(name) for name in ("lazyslide", "spatialdata", "wsidata")}

@@ -1,0 +1,53 @@
+nextflow_workflow {
+    name "Test Subworkflow QC"
+    script "../main.nf"
+    workflow "QC"
+
+    tag "subworkflows"
+    tag "subworkflows_local"
+    tag "subworkflows/qc"
+    tag "lazyslide/tileqc"
+    tag "lazyslide/tiletissues"
+    tag "lazyslide/grandqc"
+
+    test("Score regular tiles and create a separate GrandQC grid") {
+        options "-stub-run"
+
+        when {
+            workflow {
+                """
+                def inputs = java.nio.file.Files.createTempDirectory('slide-qc')
+                def slide = java.nio.file.Files.createDirectory(inputs.resolve('sample.zarr'))
+                def mask = java.nio.file.Files.createDirectory(inputs.resolve('sample.tissue.zarr'))
+                def tiles = java.nio.file.Files.createDirectory(inputs.resolve('sample.tiles.zarr'))
+                def meta = [id: 'sample']
+                input[0] = channel.of([meta, slide, mask])
+                input[1] = channel.of([meta, tiles])
+                input[2] = java.nio.file.Files.createFile(inputs.resolve('FocusLiteNN_exported.pt2'))
+                input[3] = java.nio.file.Files.createFile(inputs.resolve('PathProfiler_patch_quality_exported.pt2'))
+                input[4] = java.nio.file.Files.createFile(inputs.resolve('GrandQC_MPP15_exported.pt2'))
+                input[5] = null
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+            def tasks = workflow.trace.tasks().countBy { it.name.tokenize(':').last().tokenize(' ').first() }
+            assert tasks == [
+                GRANDQC_TILETISSUES: 1,
+                LAZYSLIDE_GRANDQC: 1,
+                LAZYSLIDE_TILEQC: 1,
+                LAZYSLIDE_TILEQC_FOCUSLITENN: 1,
+                LAZYSLIDE_TILEQC_PATHPROFILERQC: 1,
+            ]
+            def tile_qc = workflow.out.tile_qc.collect { meta, store ->
+                assert meta.id == 'sample'
+                path(store).fileName.toString()
+            }.sort()
+            def (meta, store) = workflow.out.slide_qc[0]
+            assert meta.id == 'sample'
+            assert snapshot(tile_qc, path(store).fileName.toString()).match()
+        }
+    }
+}

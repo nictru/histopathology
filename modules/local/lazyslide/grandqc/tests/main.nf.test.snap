@@ -1,5 +1,5 @@
 {
-    "Stage the slide, tile grid, and model cache": {
+    "Stage the slide, tile grid, and checkpoint": {
         "content": [
             "sample.grandqc.zarr"
         ],

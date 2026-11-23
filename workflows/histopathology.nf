@@ -5,6 +5,8 @@
 */
 include { WSIDATA_INGEST         } from '../modules/local/wsidata/ingest/main'
 include { LAZYSLIDE_FINDTISSUES   } from '../modules/local/lazyslide/findtissues/main'
+include { LAZYSLIDE_TILETISSUES   } from '../modules/local/lazyslide/tiletissues/main'
+include { QC                     } from '../subworkflows/local/qc/main'
 include { STAIN_NORMALIZATION    } from '../subworkflows/local/stain_normalization/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
@@ -24,6 +26,14 @@ workflow HISTOPATHOLOGY {
     ch_samplesheet // channel: samplesheet read in from --input
     stain_normalization
     stain_reference
+    tile_px
+    tile_mpp
+    tile_overlap
+    tile_background_fraction
+    focuslitenn_checkpoint
+    pathprofilerqc_checkpoint
+    grandqc_checkpoint
+    grandqc_variant
     multiqc_config
     multiqc_logo
     multiqc_methods_description
@@ -36,8 +46,21 @@ workflow HISTOPATHOLOGY {
     }
     WSIDATA_INGEST(ch_ingest)
     LAZYSLIDE_FINDTISSUES(WSIDATA_INGEST.out.slide)
+
+    def ch_slides_with_masks = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask)
+
+    LAZYSLIDE_TILETISSUES(ch_slides_with_masks, tile_px, tile_mpp, tile_overlap, tile_background_fraction)
+    QC(
+        ch_slides_with_masks,
+        LAZYSLIDE_TILETISSUES.out.tiles,
+        focuslitenn_checkpoint,
+        pathprofilerqc_checkpoint,
+        grandqc_checkpoint,
+        grandqc_variant,
+    )
+
     STAIN_NORMALIZATION(
-        WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask),
+        ch_slides_with_masks,
         stain_normalization,
         stain_reference,
     )
@@ -103,6 +126,9 @@ workflow HISTOPATHOLOGY {
     emit:
     slides            = WSIDATA_INGEST.out.slide                                  // channel: [ val(meta), path(slide) ]
     normalized_slides = STAIN_NORMALIZATION.out.slides                            // channel: [ val(meta), path(slide) ]
+    tiles             = LAZYSLIDE_TILETISSUES.out.tiles                            // channel: [ val(meta), path(tiles) ]
+    tile_qc           = QC.out.tile_qc                                            // channel: [ val(meta), path(scored_tiles) ]
+    slide_qc          = QC.out.slide_qc                                           // channel: [ val(meta), path(artifacts) ]
     multiqc_report    = MULTIQC.out.report.map { _meta, report -> [report] }.toList() // channel: /path/to/multiqc_report.html
     versions          = ch_versions                                              // channel: [ path(versions.yml) ]
 }

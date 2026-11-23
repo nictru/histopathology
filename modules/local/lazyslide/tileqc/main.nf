@@ -1,5 +1,5 @@
 process LAZYSLIDE_TILEQC {
-    tag "${meta.id}"
+    tag "${meta.id} (${method})"
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
@@ -9,9 +9,11 @@ process LAZYSLIDE_TILEQC {
 
     input:
     tuple val(meta), path(slide, stageAs: 'source.zarr'), path(tiles, stageAs: 'tiles.zarr')
+    val method
+    path checkpoint, stageAs: 'checkpoint.pt2'
 
     output:
-    tuple val(meta), path("${prefix}.tileqc.zarr"), emit: tiles
+    tuple val(meta), path("${prefix}.${method}.zarr"), emit: tiles
     path "versions.yml", emit: versions, topic: versions
 
     when:
@@ -22,7 +24,18 @@ process LAZYSLIDE_TILEQC {
     if (!(prefix ==~ /[A-Za-z0-9_][A-Za-z0-9_.-]*/)) {
         error("Unsafe output prefix: ${prefix}")
     }
-    method = 'tileqc'
+    if (!(method in ['tileqc', 'focuslitenn', 'pathprofilerqc'])) {
+        error("Unsupported tile QC method: ${method}")
+    }
+    if (method == 'tileqc' && checkpoint) {
+        error('Pass an empty checkpoint input for tileqc.')
+    }
+    if (method != 'tileqc' && !checkpoint) {
+        error("Supply a checkpoint file for ${method}.")
+    }
+    if (checkpoint instanceof Collection && checkpoint.size() > 1) {
+        error('Supply one checkpoint file per tile QC task.')
+    }
     template('lazyslide_tileqc.py')
 
     stub:
@@ -30,8 +43,11 @@ process LAZYSLIDE_TILEQC {
     if (!(prefix ==~ /[A-Za-z0-9_][A-Za-z0-9_.-]*/)) {
         error("Unsafe output prefix: ${prefix}")
     }
+    if (!(method in ['tileqc', 'focuslitenn', 'pathprofilerqc'])) {
+        error("Unsupported tile QC method: ${method}")
+    }
     """
-    mkdir '${prefix}.tileqc.zarr'
+    mkdir '${prefix}.${method}.zarr'
     echo '{}' > versions.yml
     """
 }

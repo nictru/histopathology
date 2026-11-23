@@ -24,9 +24,10 @@ input:
         type: directory
         description: Matching SpatialData store with tile shapes and their WSIData tile specification.
         pattern: "*.tiles.zarr"
-  - hf_cache:
-      type: directory
-      description: Hugging Face Hub cache for RendeiroLab/LazySlide-models with the selected GrandQC export and its main revision reference.
+  - checkpoint:
+      type: file
+      description: GrandQC PyTorch export from RendeiroLab/LazySlide-models matching the selected variant.
+      pattern: "*.pt2"
   - variant:
       type: string
       description: GrandQC model variant. Use 512 px tiles at 2 MPP for 5x, 1.5 MPP for 7x, or 1 MPP for 10x.

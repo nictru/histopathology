@@ -1,0 +1,17 @@
+{
+    "Score regular tiles and create a separate GrandQC grid": {
+        "content": [
+            [
+                "sample.focuslitenn.zarr",
+                "sample.pathprofilerqc.zarr",
+                "sample.tileqc.zarr"
+            ],
+            "sample.grandqc.zarr"
+        ],
+        "timestamp": "2026-11-23T22:03:13.457437",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

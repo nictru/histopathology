@@ -1,39 +1,41 @@
 #!/usr/bin/env python3
 
 import json
-import os
 from importlib.metadata import version
 from pathlib import Path
 
+import torch
+from lazyslide import open_wsi, tl
+from lazyslide_models import MODEL_REGISTRY
+from lazyslide_models.tile_prediction.cv_features import (
+    Brightness,
+    Contrast,
+    CVCompose,
+    Saturation,
+    Sharpness,
+)
 from spatialdata import read_zarr
 
 
-def score_tiles(tiles, method):
-    if method != "tileqc":
-        os.environ["HF_HUB_CACHE"] = str(Path("hf-cache").absolute())
-        os.environ["HF_HUB_OFFLINE"] = "1"
-
-    import torch
-    from lazyslide import open_wsi, tl
-
-    model = method
+def tile_model(method):
     if method == "tileqc":
-        from lazyslide_models.tile_prediction.cv_features import (
-            Brightness,
-            Contrast,
-            CVCompose,
-            Saturation,
-            Sharpness,
-        )
+        return CVCompose(Brightness(), Contrast(), Sharpness(), Saturation())
 
-        model = CVCompose(Brightness(), Contrast(), Sharpness(), Saturation())
+    # Preserve the registry model's transforms and scoring with the staged export.
+    class CheckpointModel(MODEL_REGISTRY[method]):
+        def __init__(self):
+            self.model = torch.export.load("checkpoint.pt2").module()
 
+    return CheckpointModel()
+
+
+def score_tiles(tiles, method):
     slide = read_zarr("source.zarr")
     slide.shapes["tiles"] = tiles.shapes["tiles"]
     slide.attrs["tile_spec"] = tiles.attrs["tile_spec"]
     wsi = open_wsi(slide, image_key="wsi")
     torch.set_num_threads(int("${task.cpus}"))
-    tl.tile_prediction(wsi, model, tile_key="tiles", device="cpu", pbar=False)
+    tl.tile_prediction(wsi, tile_model(method), tile_key="tiles", device="cpu", pbar=False)
     return wsi.shapes["tiles"]
 
 

@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: qc
+description: Score tissue tiles and detect artifacts across whole slides using LazySlide.
+keywords:
+  - histology
+  - quality control
+  - whole-slide imaging
+components:
+  - lazyslide/tileqc
+  - lazyslide/tiletissues
+  - lazyslide/grandqc
+input:
+  - ch_slides_with_masks:
+      type: file
+      description: |
+        Ingested WSIData stores and their aligned tissue masks.
+        Structure: [ val(meta), path(slide), path(tissue_mask) ]
+      pattern: "*.zarr"
+  - ch_tiles:
+      type: file
+      description: |
+        Tile grids for tile-level quality control.
+        Structure: [ val(meta), path(tiles) ]
+      pattern: "*.tiles.zarr"
+  - focuslitenn_checkpoint:
+      type: string
+      description: Path or URL of the FocusLiteNN PyTorch export.
+  - pathprofilerqc_checkpoint:
+      type: string
+      description: Path or URL of the PathProfilerQC PyTorch export.
+  - grandqc_checkpoint:
+      type: string
+      description: Path or URL of the GrandQC PyTorch export.
+  - grandqc_variant:
+      type: string
+      description: Model variant. Omit to infer the variant from an official checkpoint filename.
+output:
+  - tile_qc:
+      type: file
+      description: |
+        Tile grids with image metrics, FocusLiteNN scores, or PathProfilerQC scores.
+        Structure: [ val(meta), path(scored_tiles) ]
+      pattern: "*.{tileqc,focuslitenn,pathprofilerqc}.zarr"
+  - slide_qc:
+      type: file
+      description: |
+        GrandQC artifact counts and polygons for each slide.
+        Structure: [ val(meta), path(artifacts) ]
+      pattern: "*.grandqc.zarr"
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"

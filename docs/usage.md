@@ -40,6 +40,20 @@ Before normalization, LazySlide detects tissue once per slide using Otsu thresho
 
 The pipeline fits the selected reference slide once and uses it to normalize every slide in the samplesheet, including the reference itself. Squidpy uses the precomputed masks to estimate stain statistics from tissue and preserve the background. Each normalized Zarr records the method, reference sample, and fitted statistics in its attributes. Slides with no detected tissue retain their original pixels.
 
+## Tiling and quality control
+
+The pipeline tiles the tissue on each ingested slide and writes `<OUTDIR>/tiles/<sample>.tiles.zarr`. It defaults to 256 × 256 pixels at the slide's native resolution, with no overlap and at most 30% background per tile. Set `--tile_px`, `--tile_mpp`, `--tile_overlap`, or `--tile_background_fraction` to change these values.
+
+The pipeline measures brightness, contrast, sharpness, and saturation on the original slide tiles. It writes `<sample>.tileqc.zarr` to `<OUTDIR>/qc/`. FocusLiteNN, PathProfilerQC, and GrandQC run by default with pinned checkpoints from the LazySlide team on Hugging Face. Set a checkpoint option to use a different `.pt2` file or URL.
+
+| Parameter                     | Output in `<OUTDIR>/qc/`               |
+| ----------------------------- | -------------------------------------- |
+| `--focuslitenn_checkpoint`    | `<sample>.focuslitenn.zarr`             |
+| `--pathprofilerqc_checkpoint`  | `<sample>.pathprofilerqc.zarr`          |
+| `--grandqc_checkpoint`        | `<sample>.grandqc.zarr`                |
+
+The pipeline infers the GrandQC variant from the official checkpoint filename. The default checkpoint is for `7x`. To use `5x` or `10x`, supply the corresponding file or URL with `--grandqc_checkpoint`. Set `--grandqc_variant` if your checkpoint has a different filename. The pipeline makes a separate overlapping 512 × 512 grid at 2 MPP for `5x`, 1.5 MPP for `7x`, or 1 MPP for `10x`.
+
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:

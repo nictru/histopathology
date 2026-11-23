@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
 
 import json
-import os
 from importlib.metadata import version
 from pathlib import Path
 
+import torch
+from lazyslide import open_wsi, seg
+from lazyslide_models.segmentation import GrandQCArtifact
 from spatialdata import SpatialData, read_zarr
 
 
+class CheckpointGrandQC(GrandQCArtifact):
+    def __init__(self):
+        self.model = torch.export.load("checkpoint.pt2").module()
+
+
 def detect_artifacts(tiles, variant):
-    os.environ["HF_HUB_CACHE"] = str(Path("hf-cache").absolute())
-    os.environ["HF_HUB_OFFLINE"] = "1"
-
-    import torch
-    from lazyslide import open_wsi, seg
-
     slide = read_zarr("source.zarr")
     slide.shapes["tiles"] = tiles.shapes["tiles"]
     slide.attrs["tile_spec"] = tiles.attrs["tile_spec"]
     wsi = open_wsi(slide, image_key="wsi")
     torch.set_num_threads(int("${task.cpus}"))
-    seg.artifact(wsi, tile_key="tiles", variant=variant, device="cpu", pbar=False)
+    seg.artifact(wsi, tile_key="tiles", model=CheckpointGrandQC(), variant=variant, device="cpu", pbar=False)
     return wsi.shapes.get("artifacts")
 
 

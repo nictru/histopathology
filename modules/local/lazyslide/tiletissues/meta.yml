@@ -29,7 +29,7 @@ input:
       description: Tile width and height in pixels at the requested MPP.
   - mpp:
       type: float
-      description: Tile resolution in microns per pixel, at least the native slide MPP.
+      description: Tile resolution in microns per pixel. Pass an empty string to use the native slide MPP.
   - overlap:
       type: float
       description: Fractional overlap between adjacent tiles in the range [0, 1).

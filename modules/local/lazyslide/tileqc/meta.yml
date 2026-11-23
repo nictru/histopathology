@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
 name: lazyslide_tileqc
-description: Measure brightness, contrast, sharpness, and saturation for each slide tile.
+description: Score slide tiles with image metrics, FocusLiteNN, or PathProfilerQC.
 keywords:
   - histology
   - tile quality control
@@ -24,15 +24,23 @@ input:
         type: directory
         description: Matching SpatialData store with tile shapes and their WSIData tile specification.
         pattern: "*.tiles.zarr"
+  - method:
+      type: string
+      description: Tile QC method. Use tileqc for brightness, contrast, sharpness, and saturation.
+      enum: [tileqc, focuslitenn, pathprofilerqc]
+  - checkpoint:
+      type: file
+      description: PyTorch export matching the selected learned method. Pass an empty list for tileqc.
+      pattern: "*.pt2"
 output:
   tiles:
     - - meta:
           type: map
           description: Sample metadata containing the slide ID.
-      - "${prefix}.tileqc.zarr":
+      - "${prefix}.${method}.zarr":
           type: directory
-          description: SpatialData store with the original tile shapes and four image quality metric columns.
-          pattern: "*.tileqc.zarr"
+          description: SpatialData store with the original tile shapes and QC scores for the selected method.
+          pattern: "*.{tileqc,focuslitenn,pathprofilerqc}.zarr"
   versions:
     - versions.yml:
         type: file
