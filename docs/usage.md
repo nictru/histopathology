@@ -76,6 +76,12 @@ Find results in `<OUTDIR>/segmentation/<sample>.<model>.cells.zarr`. The `nuclei
 
 Add the `gpu` profile to your container profile, for example `-profile docker,gpu`. The segmentation process requests one NVIDIA GPU and uses the CUDA 13.0 environment. Use a compatible NVIDIA driver on the execution host. On AWS Batch, configure a GPU-capable queue for processes with the `process_gpu` label.
 
+### CytoFormer cell typing
+
+Set `--cytoformer_organ` to classify the instances produced by each selected segmentation model. For example, `--segmentation_model instanseg --cytoformer_organ breast` classifies InstanSeg nuclei with the breast model head. Select the organ that applies to all slides in the run. CytoFormer crops a 56 µm field of view around each instance centroid on the original H&E image.
+
+Request access on Hugging Face and set the `HF_TOKEN` Nextflow secret to a read token with access. By default, each task with detected instances downloads the 2.7 GB checkpoint. Set `HF_HOME` to a shared cache visible and writable from the tasks to reuse the download. Add the `gpu` profile for CUDA inference. [CytoFormer checkpoint](https://huggingface.co/zhihuanglab/CytoFormer)
+
 ## Tile embeddings
 
 Set `--embedding_model resnet50` to generate one feature vector per tissue tile. To run several encoders, pass a comma-separated list such as `--embedding_model uni,uni2,gigapath-flash`. Embedding extraction is disabled by default and can run independently of cell segmentation.

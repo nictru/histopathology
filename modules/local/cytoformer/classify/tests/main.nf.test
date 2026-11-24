@@ -1,0 +1,53 @@
+nextflow_process {
+    name "Test CYTOFORMER_CLASSIFY"
+    script "../main.nf"
+    process "CYTOFORMER_CLASSIFY"
+
+    tag "modules"
+    tag "modules_local"
+    tag "cytoformer/classify"
+
+    test("Emit separate cell typing stores and MultiQC previews per segmentation model") {
+        options "-stub"
+
+        setup {
+            run("WSIDATA_INGEST") {
+                script "../../../wsidata/ingest/main.nf"
+                process {
+                    """
+                    def source = file('https://raw.githubusercontent.com/instanseg/instanseg/414fbc9e8039c1d049cc27871d66409084ded21c/instanseg/examples/HE_example.tif', checkIfExists: true)
+                    input[0] = channel.of([[id: 'test'], source, [], 0.5])
+                    """
+                }
+            }
+            run("LAZYSLIDE_CELLS") {
+                script "../../../lazyslide/cells/main.nf"
+                process {
+                    """
+                    input[0] = WSIDATA_INGEST.out.slide
+                        .combine(channel.of('instanseg', 'classpose'))
+                        .map { meta, slide, model -> [meta, slide, slide, slide, model] }
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = LAZYSLIDE_CELLS.out.cells.combine(WSIDATA_INGEST.out.slide, by: 0)
+                input[1] = 'colon'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def stores = process.out.cell_types.collect { meta, store -> [meta.id, path(store).fileName.toString()] }.sort { it[1] }
+            def previews = process.out.multiqc_files.collect { path(it).fileName.toString() }.sort()
+            assert stores.size() == 2
+            assert previews.size() == 2
+            assert snapshot(stores, previews).match()
+        }
+    }
+}

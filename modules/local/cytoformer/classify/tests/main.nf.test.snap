@@ -1,0 +1,25 @@
+{
+    "Emit separate cell typing stores and MultiQC previews per segmentation model": {
+        "content": [
+            [
+                [
+                    "test",
+                    "test.classpose.cytoformer.zarr"
+                ],
+                [
+                    "test",
+                    "test.instanseg.cytoformer.zarr"
+                ]
+            ],
+            [
+                "test.classpose.cytoformer_mqc.json",
+                "test.instanseg.cytoformer_mqc.json"
+            ]
+        ],
+        "timestamp": "2026-11-24T21:28:51.223085",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

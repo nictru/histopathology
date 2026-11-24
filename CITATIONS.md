@@ -10,7 +10,9 @@
 
 ## Pipeline tools
 
+- [CytoFormer](https://doi.org/10.1016/j.prpath.2026.100006)
 
+> Yao J, Li S, Yu A, Huang Z. CytoFormer: a molecularly supervised cell foundation model for histopathology cell classification. Precision Pathology. 2026. doi: 10.1016/j.prpath.2026.100006.
 
 - [MultiQC](https://pubmed.ncbi.nlm.nih.gov/27312411/)
 

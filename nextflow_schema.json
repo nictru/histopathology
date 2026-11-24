@@ -79,6 +79,11 @@
                     "exclusiveMinimum": 0,
                     "default": 0.5,
                     "description": "Segmentation tile resolution in microns per pixel. Applies to all selected segmentation models."
+                },
+                "cytoformer_organ": {
+                    "type": "string",
+                    "enum": ["bone", "bone_marrow", "brain", "breast", "cervix", "colon", "heart", "kidney", "liver", "lung", "lymph_node", "ovary", "pancreas", "prostate", "skin", "tonsil"],
+                    "description": "Enable CytoFormer cell typing with the selected organ head. Requires a segmentation model and Hugging Face model access."
                 }
             }
         },

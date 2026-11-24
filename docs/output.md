@@ -40,9 +40,14 @@ The report includes these views for each slide.
 - **Stain normalization** shows matching original and normalized slide thumbnails when normalization runs.
 - **Segmentation masks** show semi-transparent cell or nucleus masks on a crop of the original slide for each selected model. Each crop centers on a detected instance.
 - **Cell type segmentation** shows the same crop with instances colored by predicted class when the model returns cell-type labels.
+- **CytoFormer previews** appear in **Cell type segmentation** when `--cytoformer_organ` is set. Each preview identifies the source segmenter and organ head.
 - **Segmentation agreement** appears when two or more segmentation methods run. Switch metric tabs to compare methods on a fixed 0–1 scale. Each heatmap uses the same hierarchical order, based on instance F1. The dendrogram groups methods with detections, and methods without detections appear after them.
 
 The report embeds thumbnails and detail crops. Use the corresponding Zarr outputs for full-resolution images, masks, geometries, and tile scores.
+
+### CytoFormer cell types
+
+Find the classified instances in `cell_types/<sample>.<segmentation_model>.cytoformer.zarr`. Each store preserves the source `nuclei` or `cells` polygons and adds `cytoformer_cell_type` and `cytoformer_probability` to the shapes layer. The `cell_typing` metadata records the organ, checkpoint revision, device, and instance count.
 
 ### Segmentation agreement
 

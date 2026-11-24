@@ -8,6 +8,7 @@ include { LAZYSLIDE_FINDTISSUES   } from '../modules/local/lazyslide/findtissues
 include { LAZYSLIDE_TILETISSUES   } from '../modules/local/lazyslide/tiletissues/main'
 include { QC                     } from '../subworkflows/local/qc/main'
 include { SEGMENTATION           } from '../subworkflows/local/segmentation/main'
+include { CYTOFORMER_CLASSIFY    } from '../modules/local/cytoformer/classify/main'
 include { STAIN_NORMALIZATION    } from '../subworkflows/local/stain_normalization/main'
 include { TILE_EMBEDDINGS         } from '../subworkflows/local/tile_embeddings/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
@@ -36,6 +37,7 @@ workflow HISTOPATHOLOGY {
     grandqc_variant
     segmentation_model
     segmentation_mpp
+    cytoformer_organ
     embedding_model
     embedding_batch_size
     multiqc_config
@@ -44,6 +46,13 @@ workflow HISTOPATHOLOGY {
     outdir
 
     main:
+
+    def segmentation_models = (!segmentation_model || segmentation_model == 'none')
+        ? []
+        : segmentation_model.split(',', -1).collect { model -> model.trim() }.unique()
+    if (cytoformer_organ && !segmentation_models) {
+        error('CytoFormer requires at least one --segmentation_model.')
+    }
 
     def ch_ingest = ch_samplesheet.map { meta, slide ->
         [meta, slide, meta.scene, meta.mpp]
@@ -76,9 +85,6 @@ workflow HISTOPATHOLOGY {
     }
     def ch_analysis_slides = stain_reference ? ch_normalized_slides : WSIDATA_INGEST.out.slide
 
-    def segmentation_models = (!segmentation_model || segmentation_model == 'none')
-        ? []
-        : segmentation_model.split(',', -1).collect { it.trim() }.unique()
     def ch_cells = channel.empty()
     def ch_segmentation_agreement = channel.empty()
     if (segmentation_models) {
@@ -100,6 +106,14 @@ workflow HISTOPATHOLOGY {
         ch_cells = SEGMENTATION.out.cells
         ch_segmentation_agreement = SEGMENTATION.out.agreement
         ch_multiqc_files = ch_multiqc_files.mix(SEGMENTATION.out.multiqc_files)
+    }
+
+    def ch_cell_types = channel.empty()
+    if (cytoformer_organ) {
+        def ch_typing_inputs = ch_cells.combine(WSIDATA_INGEST.out.slide, by: 0)
+        CYTOFORMER_CLASSIFY(ch_typing_inputs, cytoformer_organ)
+        ch_cell_types = CYTOFORMER_CLASSIFY.out.cell_types
+        ch_multiqc_files = ch_multiqc_files.mix(CYTOFORMER_CLASSIFY.out.multiqc_files)
     }
 
     def embedding_models = (!embedding_model || embedding_model == 'none')
@@ -189,6 +203,7 @@ workflow HISTOPATHOLOGY {
     tile_qc           = QC.out.tile_qc                                            // channel: [ val(meta), path(scored_tiles) ]
     slide_qc          = QC.out.slide_qc                                           // channel: [ val(meta), path(artifacts) ]
     cells             = ch_cells                                                  // channel: [ val(meta), path(instances) ]
+    cell_types        = ch_cell_types                                             // channel: [ val(meta), path(typed_instances) ]
     segmentation_agreement = ch_segmentation_agreement                            // channel: [ val(meta), path(agreement_csv) ]
     embeddings        = ch_embeddings                                             // channel: [ val(meta), path(embedding_store) ]
     multiqc_report    = MULTIQC.out.report.map { _meta, report -> [report] }.toList() // channel: /path/to/multiqc_report.html

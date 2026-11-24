@@ -49,6 +49,7 @@ workflow NFCORE_HISTOPATHOLOGY {
         params.grandqc_variant,
         params.segmentation_model,
         params.segmentation_mpp,
+        params.cytoformer_organ?.toString(),
         params.embedding_model,
         params.embedding_batch_size,
         params.multiqc_config,
@@ -63,6 +64,7 @@ workflow NFCORE_HISTOPATHOLOGY {
     tile_qc           = HISTOPATHOLOGY.out.tile_qc           // channel: [ val(meta), path(scored_tiles) ]
     slide_qc          = HISTOPATHOLOGY.out.slide_qc          // channel: [ val(meta), path(artifacts) ]
     cells             = HISTOPATHOLOGY.out.cells             // channel: [ val(meta), path(instances) ]
+    cell_types        = HISTOPATHOLOGY.out.cell_types        // channel: [ val(meta), path(typed_instances) ]
     embeddings        = HISTOPATHOLOGY.out.embeddings        // channel: [ val(meta), path(embedding_store) ]
     multiqc_report    = HISTOPATHOLOGY.out.multiqc_report    // channel: /path/to/multiqc_report.html
 }
