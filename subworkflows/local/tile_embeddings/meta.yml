@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: tile_embeddings
+description: Extract tissue tile embeddings with selected pretrained encoders.
+keywords:
+  - histology
+  - embeddings
+  - feature extraction
+components:
+  - huggingface/download
+  - lazyslide/featureextraction
+  - lazyslide/tiletissues
+input:
+  - ch_slides:
+      type: file
+      description: Ingested or normalized WSIData stores in tuples of metadata and slide paths.
+      pattern: "*.zarr"
+  - ch_slides_with_masks:
+      type: file
+      description: Ingested slides with aligned tissue masks for building the embedding grid.
+      pattern: "*.zarr"
+  - ch_tiles:
+      type: file
+      description: Regular tile grids in tuples of metadata and store paths.
+      pattern: "*.tiles.zarr"
+  - tile_px:
+      type: integer
+      description: Regular tile width in pixels.
+  - tile_mpp:
+      type: float
+      description: Regular tile resolution in microns per pixel.
+  - tile_overlap:
+      type: float
+      description: Regular tile overlap fraction.
+  - background_fraction:
+      type: float
+      description: Maximum fraction of a tile that may fall outside tissue.
+  - models:
+      type: list
+      description: Selected tile encoder names.
+  - batch_size:
+      type: integer
+      description: Number of tiles per inference batch.
+  - resnet50_checkpoint:
+      type: string
+      description: ResNet50 A1 checkpoint path or URL.
+  - uni_checkpoint:
+      type: string
+      description: Optional UNI checkpoint path or URL.
+  - uni2_checkpoint:
+      type: string
+      description: Optional UNI2-h checkpoint path or URL.
+  - gigapath_flash_checkpoint:
+      type: string
+      description: Optional GigaPath-Flash tile encoder checkpoint path or URL.
+output:
+  - embeddings:
+      type: file
+      description: SpatialData stores with tile geometries and embedding tables in tuples of metadata and store paths.
+      pattern: "*.embeddings.zarr"
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"

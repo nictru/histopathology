@@ -1,0 +1,89 @@
+nextflow_process {
+    name "Test LAZYSLIDE_FEATUREEXTRACTION"
+    script "../main.nf"
+    process "LAZYSLIDE_FEATUREEXTRACTION"
+
+    tag "modules"
+    tag "modules_local"
+    tag "lazyslide/featureextraction"
+    tag "lazyslide/tiletissues"
+    tag "lazyslide/findtissues"
+    tag "wsidata/ingest"
+
+    test("Write tile embeddings and retain an empty result for a blank slide") {
+        setup {
+            run("WSIDATA_INGEST") {
+                script "../../../wsidata/ingest/main.nf"
+                process {
+                    """
+                    def tissue = file('https://huggingface.co/datasets/RendeiroLab/LazySlide-data/resolve/d469afd4a763ad366861e8c49d4cf424bfad902c/sample.svs', checkIfExists: true)
+                    def blank = java.nio.file.Files.createTempFile('blank-slide', '.tif')
+                    def image = new java.awt.image.BufferedImage(512, 512, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                    def graphics = image.createGraphics()
+                    graphics.setColor(java.awt.Color.WHITE)
+                    graphics.fillRect(0, 0, image.width, image.height)
+                    graphics.dispose()
+                    assert javax.imageio.ImageIO.write(image, 'tiff', blank.toFile())
+                    input[0] = channel.of([[id: 'tissue'], tissue, [], []], [[id: 'blank'], blank, [], 0.5])
+                    """
+                }
+            }
+            run("LAZYSLIDE_FINDTISSUES") {
+                script "../../findtissues/main.nf"
+                process {
+                    """
+                    input[0] = WSIDATA_INGEST.out.slide
+                    """
+                }
+            }
+            run("LAZYSLIDE_TILETISSUES") {
+                script "../../tiletissues/main.nf"
+                process {
+                    """
+                    input[0] = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask)
+                    input[1] = 256
+                    input[2] = 0.5
+                    input[3] = 0
+                    input[4] = 0.3
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                def tiles = LAZYSLIDE_TILETISSUES.out.tiles.map { meta, store, _pixels -> [meta, store] }
+                input[0] = WSIDATA_INGEST.out.slide.join(tiles)
+                input[1] = 'resnet50'
+                input[2] = file('https://huggingface.co/timm/resnet50.a1_in1k/resolve/767268603ca0cb0bfe326fa87277f19c419566ef/model.safetensors', checkIfExists: true)
+                input[3] = 8
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def results = process.out.embeddings.sort { it[0].id }.collect { meta, store ->
+                def root = path(store)
+                def attrs = path(root.resolve('zarr.json').toString()).json.attributes
+                def tileCount = attrs.tile_embeddings.tile_count
+                assert attrs.tile_embeddings.model == 'resnet50'
+                assert (tileCount > 0) == (meta.id == 'tissue')
+                def table = root.resolve('tables/resnet50_tiles')
+                assert java.nio.file.Files.isDirectory(table) == (meta.id == 'tissue')
+                if (tileCount) {
+                    assert attrs.tile_spec.tiles.mpp == 0.5
+                    assert java.nio.file.Files.isDirectory(root.resolve('shapes/tiles'))
+                    def matrix = path(table.resolve('X/zarr.json').toString()).json
+                    assert matrix.shape == [tileCount, 2048]
+                    assert java.nio.file.Files.isDirectory(table.resolve('uns/spatialdata_attrs'))
+                    assert path(table.resolve('obs/tile_id/zarr.json').toString()).json.shape == [tileCount]
+                }
+                [meta.id, root.fileName.toString()]
+            }
+            assert results.size() == 2
+            assert snapshot(results).match()
+        }
+    }
+}

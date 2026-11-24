@@ -109,6 +109,47 @@
                 }
             }
         },
+        "tile_embedding_options": {
+            "title": "Tile embedding options",
+            "type": "object",
+            "fa_icon": "fas fa-brain",
+            "description": "Extract feature vectors for tissue tiles with pretrained image encoders.",
+            "properties": {
+                "embedding_model": {
+                    "type": "string",
+                    "default": "none",
+                    "pattern": "^(none|(resnet50|uni|uni2|gigapath-flash)(, *(resnet50|uni|uni2|gigapath-flash))*)$",
+                    "description": "Comma-separated tile embedding models. Choose resnet50, uni, uni2, or gigapath-flash. Use none to skip embedding extraction."
+                },
+                "embedding_batch_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 16,
+                    "description": "Number of tiles per inference batch."
+                },
+                "resnet50_checkpoint": {
+                    "type": "string",
+                    "format": "file-path",
+                    "default": "https://huggingface.co/timm/resnet50.a1_in1k/resolve/767268603ca0cb0bfe326fa87277f19c419566ef/model.safetensors",
+                    "description": "ResNet50 A1 checkpoint file or URL."
+                },
+                "uni_checkpoint": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "UNI checkpoint file or URL. When omitted, use the HF_TOKEN Nextflow secret to download the pinned gated weights."
+                },
+                "uni2_checkpoint": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "UNI2-h checkpoint file or URL. When omitted, use the HF_TOKEN Nextflow secret to download the pinned gated weights."
+                },
+                "gigapath_flash_checkpoint": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "GigaPath-Flash tile encoder checkpoint file or URL. When omitted, use the HF_TOKEN Nextflow secret to download the pinned gated weights."
+                }
+            }
+        },
         "tiling_qc_options": {
             "title": "Tiling and quality control",
             "type": "object",
@@ -331,6 +372,9 @@
         },
         {
             "$ref": "#/$defs/segmentation_options"
+        },
+        {
+            "$ref": "#/$defs/tile_embedding_options"
         },
         {
             "$ref": "#/$defs/tiling_qc_options"

@@ -1,0 +1,58 @@
+nextflow_workflow {
+    name "Test TILE_EMBEDDINGS"
+    script "../main.nf"
+    workflow "TILE_EMBEDDINGS"
+
+    tag "subworkflows"
+    tag "subworkflows_local"
+    tag "subworkflows/tile_embeddings"
+    tag "lazyslide/featureextraction"
+    tag "huggingface/download"
+
+    test("Run each selected encoder on every sample - stub") {
+        options "-stub-run"
+
+        when {
+            workflow {
+                """
+                def inputs = java.nio.file.Files.createTempDirectory('embedding-inputs')
+                def slides = ['slide-a', 'slide-b'].collect { id ->
+                    def slide = java.nio.file.Files.createDirectory(inputs.resolve(id + '.zarr'))
+                    def mask = java.nio.file.Files.createDirectory(inputs.resolve(id + '.tissue.zarr'))
+                    def grid = java.nio.file.Files.createDirectory(inputs.resolve(id + '.tiles.zarr'))
+                    [[id: id], slide, mask, grid]
+                }
+                def checkpoint = java.nio.file.Files.createFile(inputs.resolve('resnet50.safetensors'))
+                input[0] = channel.fromList(slides).map { meta, slide, mask, grid -> [meta, slide] }
+                input[1] = channel.fromList(slides).map { meta, slide, mask, grid -> [meta, slide, mask] }
+                input[2] = channel.fromList(slides).map { meta, slide, mask, grid -> [meta, grid] }
+                input[3] = 256
+                input[4] = 0.5
+                input[5] = 0
+                input[6] = 0.3
+                input[7] = ['resnet50', 'uni']
+                input[8] = 8
+                input[9] = checkpoint
+                input[10] = null
+                input[11] = null
+                input[12] = null
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+            def stores = workflow.out.embeddings.collect { meta, store ->
+                assert path(store).fileName.toString().startsWith(meta.id + '.')
+                path(store).fileName.toString()
+            }.sort()
+            assert stores == [
+                'slide-a.resnet50.embeddings.zarr',
+                'slide-a.uni.embeddings.zarr',
+                'slide-b.resnet50.embeddings.zarr',
+                'slide-b.uni.embeddings.zarr',
+            ]
+            assert snapshot(stores).match()
+        }
+    }
+}

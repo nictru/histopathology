@@ -1,0 +1,21 @@
+{
+    "Write tile embeddings and retain an empty result for a blank slide": {
+        "content": [
+            [
+                [
+                    "blank",
+                    "blank.resnet50.embeddings.zarr"
+                ],
+                [
+                    "tissue",
+                    "tissue.resnet50.embeddings.zarr"
+                ]
+            ]
+        ],
+        "timestamp": "2026-11-24T17:11:49.014147",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

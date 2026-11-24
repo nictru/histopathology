@@ -79,6 +79,23 @@ Find results in `<OUTDIR>/segmentation/<sample>.<model>.cells.zarr`. The `nuclei
 
 Add the `gpu` profile to your container profile, for example `-profile docker,gpu`. The segmentation process requests one NVIDIA GPU and uses the CUDA 13.0 environment. Use a compatible NVIDIA driver on the execution host. On AWS Batch, configure a GPU-capable queue for processes with the `process_gpu` label.
 
+## Tile embeddings
+
+Set `--embedding_model resnet50` to generate one feature vector per tissue tile. To run several encoders, pass a comma-separated list such as `--embedding_model uni,uni2,gigapath-flash`. Embedding extraction is disabled by default and can run independently of cell segmentation.
+
+The encoders share a grid of non-overlapping 256 × 256 pixel tiles at 0.5 µm/px. Supply slides calibrated at that resolution or finer. If the regular tiling parameters match, the pipeline reuses that grid. Embedding extraction uses the normalized slide when you supply a stain reference and the ingested slide when you omit it. Set `--embedding_batch_size` to change the inference batch size from its default of 16. Add the `gpu` profile for CUDA inference.
+
+| Encoder | Checkpoint parameter |
+| --- | --- |
+| ResNet50 A1 | `--resnet50_checkpoint` |
+| UNI | `--uni_checkpoint` |
+| UNI2-h | `--uni2_checkpoint` |
+| GigaPath-Flash tile encoder | `--gigapath_flash_checkpoint` |
+
+ResNet50 uses a pinned public checkpoint. For UNI, UNI2, and GigaPath-Flash, request access to the model on Hugging Face and set the `HF_TOKEN` Nextflow secret to download the pinned weights. You can also supply a compatible checkpoint file or URL using the corresponding parameter.
+
+Each `<OUTDIR>/embeddings/<sample>.<model>.embeddings.zarr` contains the tile geometries and a linked AnnData table named `<model>_tiles`. The table contains one row per tile, with a `tile_id` that identifies its geometry. Slides without eligible tiles produce a store with a tile count of zero.
+
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:

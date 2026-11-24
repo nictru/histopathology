@@ -9,6 +9,7 @@ include { LAZYSLIDE_TILETISSUES   } from '../modules/local/lazyslide/tiletissues
 include { QC                     } from '../subworkflows/local/qc/main'
 include { SEGMENTATION           } from '../subworkflows/local/segmentation/main'
 include { STAIN_NORMALIZATION    } from '../subworkflows/local/stain_normalization/main'
+include { TILE_EMBEDDINGS         } from '../subworkflows/local/tile_embeddings/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -41,6 +42,12 @@ workflow HISTOPATHOLOGY {
     cellpose_checkpoint
     nulite_checkpoint
     histoplus_checkpoint
+    embedding_model
+    embedding_batch_size
+    resnet50_checkpoint
+    uni_checkpoint
+    uni2_checkpoint
+    gigapath_flash_checkpoint
     multiqc_config
     multiqc_logo
     multiqc_methods_description
@@ -72,6 +79,7 @@ workflow HISTOPATHOLOGY {
         STAIN_NORMALIZATION(ch_slides_with_masks, stain_normalization, stain_reference)
         ch_normalized_slides = STAIN_NORMALIZATION.out.slides
     }
+    def ch_analysis_slides = stain_reference ? ch_normalized_slides : WSIDATA_INGEST.out.slide
 
     def segmentation_models = (!segmentation_model || segmentation_model == 'none')
         ? []
@@ -83,7 +91,7 @@ workflow HISTOPATHOLOGY {
             error("Unsupported segmentation models: ${unsupported_models.join(', ')}.")
         }
         SEGMENTATION(
-            stain_reference ? ch_normalized_slides : WSIDATA_INGEST.out.slide,
+            ch_analysis_slides,
             ch_slides_with_masks,
             ch_tiles,
             tile_px,
@@ -98,6 +106,33 @@ workflow HISTOPATHOLOGY {
             histoplus_checkpoint,
         )
         ch_cells = SEGMENTATION.out.cells
+    }
+
+    def embedding_models = (!embedding_model || embedding_model == 'none')
+        ? []
+        : embedding_model.split(',', -1).collect { model -> model.trim() }.unique()
+    def ch_embeddings = channel.empty()
+    if (embedding_models) {
+        def unsupported_models = embedding_models - ['resnet50', 'uni', 'uni2', 'gigapath-flash']
+        if (unsupported_models) {
+            error("Unsupported embedding models: ${unsupported_models.join(', ')}.")
+        }
+        TILE_EMBEDDINGS(
+            ch_analysis_slides,
+            ch_slides_with_masks,
+            ch_tiles,
+            tile_px,
+            tile_mpp,
+            tile_overlap,
+            tile_background_fraction,
+            embedding_models,
+            embedding_batch_size,
+            resnet50_checkpoint,
+            uni_checkpoint,
+            uni2_checkpoint,
+            gigapath_flash_checkpoint,
+        )
+        ch_embeddings = TILE_EMBEDDINGS.out.embeddings
     }
 
     def ch_versions = channel.empty()
@@ -165,6 +200,7 @@ workflow HISTOPATHOLOGY {
     tile_qc           = QC.out.tile_qc                                            // channel: [ val(meta), path(scored_tiles) ]
     slide_qc          = QC.out.slide_qc                                           // channel: [ val(meta), path(artifacts) ]
     cells             = ch_cells                                                  // channel: [ val(meta), path(instances) ]
+    embeddings        = ch_embeddings                                             // channel: [ val(meta), path(embedding_store) ]
     multiqc_report    = MULTIQC.out.report.map { _meta, report -> [report] }.toList() // channel: /path/to/multiqc_report.html
     versions          = ch_versions                                              // channel: [ path(versions.yml) ]
 }
