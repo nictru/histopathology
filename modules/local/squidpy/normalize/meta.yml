@@ -51,6 +51,11 @@ output:
           type: directory
           description: Normalized WSIData store with fitted reference provenance in its attributes.
           pattern: "*.normalized.zarr"
+  multiqc_files:
+    - "${prefix}.normalized_mqc.json":
+        type: file
+        description: Original and normalized slide comparison.
+        pattern: "*_mqc.json"
   versions:
     - "versions.yml":
         type: file

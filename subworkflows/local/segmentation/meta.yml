@@ -65,6 +65,11 @@ output:
         SpatialData stores with segmentation polygons and provenance.
         Structure: [ val(meta), path(instances) ]
       pattern: "*.cells.zarr"
+  - multiqc_files:
+      type: file
+      description: Per-module MultiQC custom content.
+      pattern: "*_mqc.json"
+
 authors:
   - "@nictru"
 maintainers:

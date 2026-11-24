@@ -28,6 +28,11 @@ output:
           type: directory
           description: SpatialData store with an aligned binary label under the wsi_tissue key.
           pattern: "*.tissue.zarr"
+  multiqc_files:
+    - "${prefix}.tissue_mqc.json":
+        type: file
+        description: Binary tissue mask preview.
+        pattern: "*_mqc.json"
   versions:
     - versions.yml:
         type: file

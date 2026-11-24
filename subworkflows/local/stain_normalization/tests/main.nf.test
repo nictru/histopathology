@@ -28,6 +28,10 @@ nextflow_workflow {
 
         then {
             assert workflow.success
+            assert workflow.out.multiqc_files.collect { path(it).fileName.toString() }.sort() == [
+                'query.normalized_mqc.json',
+                'reference.normalized_mqc.json',
+            ]
             def tasks = workflow.trace.tasks().collect { it.name.tokenize(':').last() }.sort()
             assert tasks == [
                 'SQUIDPY_NORMALIZE (query)',

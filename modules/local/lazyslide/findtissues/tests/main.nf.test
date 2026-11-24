@@ -44,6 +44,14 @@ nextflow_process {
 
         then {
             assert process.success
+            def previews = process.out.multiqc_files.collect { path(it).json }.sort { it.section_name }
+            assert previews*.section_name == ['blank', 'tissue']
+            previews.each { preview ->
+                assert preview.parent_id == 'histopathology_tissue'
+                assert preview.plot_type == 'image'
+                assert preview.data.contains('data:image/jpeg;base64,')
+                assert preview.data.contains('No tissue detected.') == (preview.section_name == 'blank')
+            }
             def results = process.out.mask.sort { it[0].id }.collect { meta, mask ->
                 assert path(mask).fileName.toString() == "${meta.id}.tissue.zarr"
                 def root = path(path(mask).resolve('zarr.json').toString()).json

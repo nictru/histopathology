@@ -43,7 +43,14 @@ workflow QC {
     def ch_grandqc_tiles = GRANDQC_TILETISSUES.out.tiles.map { meta, tiles, _pixels -> [meta, tiles] }
     LAZYSLIDE_GRANDQC(ch_slides.join(ch_grandqc_tiles), grandqc_checkpoint_file, resolved_grandqc_variant)
 
+    def ch_multiqc_files = LAZYSLIDE_TILEQC.out.multiqc_files.mix(
+        LAZYSLIDE_TILEQC_FOCUSLITENN.out.multiqc_files,
+        LAZYSLIDE_TILEQC_PATHPROFILERQC.out.multiqc_files,
+        LAZYSLIDE_GRANDQC.out.multiqc_files,
+    )
+
     emit:
     tile_qc  = ch_tile_qc                      // channel: [ val(meta), path(scored_tiles) ]
     slide_qc = LAZYSLIDE_GRANDQC.out.artifacts // channel: [ val(meta), path(artifacts) ]
+    multiqc_files = ch_multiqc_files // channel: [ path(multiqc_file) ]
 }

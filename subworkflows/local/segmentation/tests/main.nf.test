@@ -63,6 +63,8 @@ nextflow_workflow {
                 }
                 def expected_results = samples.collectMany { id -> models.collect { model -> [id, id + '.' + model + '.cells.zarr'] } }
                 assert results.sort { it[1] } == expected_results.sort { it[1] }
+                def previews = workflow.out.multiqc_files.collect { path(it).fileName.toString() }.sort()
+                assert previews == expected_results.collect { it[1].replace('.zarr', '_mqc.json') }.sort()
                 if (mode in ['reuse', 'retile']) {
                     assert snapshot(results).match()
                 }

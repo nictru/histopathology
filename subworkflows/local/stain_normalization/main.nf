@@ -22,4 +22,5 @@ workflow STAIN_NORMALIZATION {
 
     emit:
     slides = SQUIDPY_NORMALIZE.out.slide // channel: [ val(meta), path(slide) ]
+    multiqc_files = SQUIDPY_NORMALIZE.out.multiqc_files // channel: [ path(multiqc_file) ]
 }

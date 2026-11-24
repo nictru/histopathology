@@ -12,6 +12,7 @@ process LAZYSLIDE_FINDTISSUES {
 
     output:
     tuple val(meta), path("${prefix}.tissue.zarr"), emit: mask
+    path "${prefix}.tissue_mqc.json", emit: multiqc_files
     path "versions.yml", emit: versions, topic: versions
 
     when:
@@ -31,6 +32,7 @@ process LAZYSLIDE_FINDTISSUES {
     }
     """
     mkdir '${prefix}.tissue.zarr'
+    touch '${prefix}.tissue_mqc.json'
     echo '{}' > versions.yml
     """
 }

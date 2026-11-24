@@ -41,6 +41,11 @@ output:
           type: directory
           description: SpatialData store with the original tile shapes and QC scores for the selected method.
           pattern: "*.{tileqc,focuslitenn,pathprofilerqc}.zarr"
+  multiqc_files:
+    - "${prefix}.${method}_mqc.json":
+        type: file
+        description: Spatial maps of tile scores.
+        pattern: "*_mqc.json"
   versions:
     - versions.yml:
         type: file

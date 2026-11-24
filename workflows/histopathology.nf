@@ -74,10 +74,13 @@ workflow HISTOPATHOLOGY {
         grandqc_variant,
     )
 
+    def ch_multiqc_files = LAZYSLIDE_FINDTISSUES.out.multiqc_files.mix(QC.out.multiqc_files)
+
     def ch_normalized_slides = channel.empty()
     if (stain_reference) {
         STAIN_NORMALIZATION(ch_slides_with_masks, stain_normalization, stain_reference)
         ch_normalized_slides = STAIN_NORMALIZATION.out.slides
+        ch_multiqc_files = ch_multiqc_files.mix(STAIN_NORMALIZATION.out.multiqc_files)
     }
     def ch_analysis_slides = stain_reference ? ch_normalized_slides : WSIDATA_INGEST.out.slide
 
@@ -106,6 +109,7 @@ workflow HISTOPATHOLOGY {
             histoplus_checkpoint,
         )
         ch_cells = SEGMENTATION.out.cells
+        ch_multiqc_files = ch_multiqc_files.mix(SEGMENTATION.out.multiqc_files)
     }
 
     def embedding_models = (!embedding_model || embedding_model == 'none')
@@ -136,7 +140,6 @@ workflow HISTOPATHOLOGY {
     }
 
     def ch_versions = channel.empty()
-    def ch_multiqc_files = channel.empty()
 
     //
     // Collate and save software versions

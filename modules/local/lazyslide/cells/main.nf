@@ -22,6 +22,7 @@ process LAZYSLIDE_CELLS {
 
     output:
     tuple val(meta), path("${prefix}.${model}.cells.zarr"), emit: cells
+    path "${prefix}.${model}.cells_mqc.json", emit: multiqc_files
     path "versions.yml", emit: versions, topic: versions
 
     when:
@@ -41,6 +42,7 @@ process LAZYSLIDE_CELLS {
     prefix = task.ext.prefix ?: "${meta.id}"
     """
     mkdir '${prefix}.${model}.cells.zarr'
+    touch '${prefix}.${model}.cells_mqc.json'
     echo '{}' > versions.yml
     """
 }

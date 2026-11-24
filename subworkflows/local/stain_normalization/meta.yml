@@ -27,6 +27,11 @@ output:
         Normalized WSIData stores with reference provenance in the attributes.
         Structure: [ val(meta), path(slide) ]
       pattern: "*.normalized.zarr"
+  - multiqc_files:
+      type: file
+      description: Per-module MultiQC custom content.
+      pattern: "*_mqc.json"
+
 authors:
   - "@nictru"
 maintainers:

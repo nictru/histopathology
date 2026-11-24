@@ -64,6 +64,10 @@ nextflow_process {
 
         then {
             assert process.success
+            def previews = process.out.multiqc_files.collect { path(it).json }.sort { it.section_name }
+            assert previews*.section_name == ['blank · instanseg', 'tissue · instanseg']
+            assert previews*.parent_id.unique() == ['histopathology_segmentation']
+            assert previews*.plot_type == ['html', 'image']
             def results = process.out.cells.sort { it[0].id }.collect { meta, store ->
                 def attrs = path(path(store).resolve('zarr.json').toString()).json.attributes.segmentation
                 assert attrs.model == 'instanseg'

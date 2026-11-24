@@ -72,4 +72,5 @@ workflow SEGMENTATION {
 
     emit:
     cells = LAZYSLIDE_CELLS.out.cells // channel: [ val(meta), path(instances) ]
+    multiqc_files = LAZYSLIDE_CELLS.out.multiqc_files // channel: [ path(multiqc_file) ]
 }

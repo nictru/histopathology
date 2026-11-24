@@ -70,6 +70,10 @@ nextflow_process {
 
         then {
             assert process.success
+            def previews = process.out.multiqc_files.collect { path(it).json }.sort { it.section_name }
+            assert previews*.section_name == ['blank · Image metrics', 'tissue · Image metrics']
+            assert previews*.parent_id.unique() == ['histopathology_tile_qc']
+            assert previews*.plot_type == ['html', 'image']
             def results = process.out.tiles.sort { it[0].id }.collect { meta, store ->
                 def attrs = path(path(store).resolve('zarr.json').toString()).json.attributes
                 assert attrs.tile_qc.method == 'tileqc'

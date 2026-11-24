@@ -47,6 +47,11 @@ output:
         GrandQC artifact counts and polygons for each slide.
         Structure: [ val(meta), path(artifacts) ]
       pattern: "*.grandqc.zarr"
+  - multiqc_files:
+      type: file
+      description: Per-module MultiQC custom content.
+      pattern: "*_mqc.json"
+
 authors:
   - "@nictru"
 maintainers:

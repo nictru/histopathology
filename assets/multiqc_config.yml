@@ -3,6 +3,16 @@ report_comment: >
   analysis pipeline. For information about how to interpret these results, please see the
   <a href="https://nf-co.re/histopathology/dev/docs/output" target="_blank">documentation</a>.
 report_section_order:
+  histopathology_tissue:
+    order: 1005
+  histopathology_slide_qc:
+    order: 1004
+  histopathology_tile_qc:
+    order: 1003
+  histopathology_normalization:
+    order: 1002
+  histopathology_segmentation:
+    order: 1001
   "nf-core-histopathology-methods-description":
     order: -1000
   software_versions:

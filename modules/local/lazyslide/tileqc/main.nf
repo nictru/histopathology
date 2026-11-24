@@ -14,6 +14,7 @@ process LAZYSLIDE_TILEQC {
 
     output:
     tuple val(meta), path("${prefix}.${method}.zarr"), emit: tiles
+    path "${prefix}.${method}_mqc.json", emit: multiqc_files
     path "versions.yml", emit: versions, topic: versions
 
     when:
@@ -48,6 +49,7 @@ process LAZYSLIDE_TILEQC {
     }
     """
     mkdir '${prefix}.${method}.zarr'
+    touch '${prefix}.${method}_mqc.json'
     echo '{}' > versions.yml
     """
 }

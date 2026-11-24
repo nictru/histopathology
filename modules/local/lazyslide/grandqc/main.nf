@@ -14,6 +14,7 @@ process LAZYSLIDE_GRANDQC {
 
     output:
     tuple val(meta), path("${prefix}.grandqc.zarr"), emit: artifacts
+    path "${prefix}.grandqc_mqc.json", emit: multiqc_files
     path "versions.yml", emit: versions, topic: versions
 
     when:
@@ -36,6 +37,7 @@ process LAZYSLIDE_GRANDQC {
     }
     """
     mkdir '${prefix}.grandqc.zarr'
+    touch '${prefix}.grandqc_mqc.json'
     echo '{}' > versions.yml
     """
 }

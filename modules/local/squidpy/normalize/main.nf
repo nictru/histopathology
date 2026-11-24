@@ -16,6 +16,7 @@ process SQUIDPY_NORMALIZE {
     output:
     tuple val(meta), path("${prefix}.stain_reference.json"), emit: reference, optional: true
     tuple val(meta), path("${prefix}.normalized.zarr"), emit: slide, optional: true
+    path "${prefix}.normalized_mqc.json", emit: multiqc_files, optional: true
     path "versions.yml", emit: versions, topic: versions
 
     when:
@@ -39,7 +40,7 @@ process SQUIDPY_NORMALIZE {
     }
     def command = fit_reference
         ? "touch '${prefix}.stain_reference.json'"
-        : "mkdir '${prefix}.normalized.zarr'"
+        : "mkdir '${prefix}.normalized.zarr' && touch '${prefix}.normalized_mqc.json'"
     """
     ${command}
     echo '{}' > versions.yml

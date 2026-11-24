@@ -18,7 +18,10 @@ nextflow_pipeline {
             // stable_content: All files in ${params.outdir}/ with stable content
             def stable_content = getAllFilesFromDir(params.outdir, ignoreFile: 'tests/.nftignore')
             assert workflow.success
+            def report = path("$outputDir/multiqc/multiqc_report.html").text
+            def report_sections = ['tissue', 'slide_qc', 'tile_qc', 'normalization', 'segmentation']
             assertAll(
+                { assert report_sections.every { section -> report.contains("id=\"histopathology_${section}\"") } },
                 { assert snapshot(
                     // pipeline versions.yml file for multiqc from which Nextflow version is removed because we test pipelines on multiple Nextflow versions
                     removeNextflowVersion("$outputDir/pipeline_info/nf_core_histopathology_software_mqc_versions.yml"),

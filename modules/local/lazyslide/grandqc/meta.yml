@@ -41,6 +41,11 @@ output:
           type: directory
           description: SpatialData store with the number of tiles scored, artifact counts by class, and artifact polygons when detected.
           pattern: "*.grandqc.zarr"
+  multiqc_files:
+    - "${prefix}.grandqc_mqc.json":
+        type: file
+        description: GrandQC artifact overlay.
+        pattern: "*_mqc.json"
   versions:
     - versions.yml:
         type: file

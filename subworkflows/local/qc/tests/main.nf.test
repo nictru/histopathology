@@ -33,6 +33,12 @@ nextflow_workflow {
 
         then {
             assert workflow.success
+            assert workflow.out.multiqc_files.collect { path(it).fileName.toString() }.sort() == [
+                'sample.focuslitenn_mqc.json',
+                'sample.grandqc_mqc.json',
+                'sample.pathprofilerqc_mqc.json',
+                'sample.tileqc_mqc.json',
+            ]
             def tasks = workflow.trace.tasks().countBy { it.name.tokenize(':').last().tokenize(' ').first() }
             assert tasks == [
                 GRANDQC_TILETISSUES: 1,

@@ -39,6 +39,11 @@ output:
           type: directory
           description: SpatialData store with instance polygons, class labels where supported, and segmentation metadata.
           pattern: "*.cells.zarr"
+  multiqc_files:
+    - "${prefix}.${model}.cells_mqc.json":
+        type: file
+        description: Zoomed instance mask preview.
+        pattern: "*_mqc.json"
   versions:
     - versions.yml:
         type: file

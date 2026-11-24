@@ -54,6 +54,7 @@ nextflow_process {
         then {
             assert process.success
             assert process.out.slide.isEmpty()
+            assert process.out.multiqc_files.isEmpty()
             def (meta, reference) = process.out.reference[0]
             assert meta.id == 'reference'
             def result = path(reference).json
@@ -121,6 +122,11 @@ nextflow_process {
         then {
             assert process.success
             assert process.out.reference.isEmpty()
+            def previews = process.out.multiqc_files.collect { path(it).json }.sort { it.section_name }
+            assert previews*.section_name == ['blank', 'tissue']
+            assert previews*.parent_id.unique() == ['histopathology_normalization']
+            assert previews*.plot_type.unique() == ['image']
+            assert previews[0].data.contains('Normalization skipped because no tissue was detected.')
             def results = process.out.slide.sort { it[0].id }.collect { meta, slide ->
                 assert path(slide).fileName.toString() == "${meta.id}.normalized.zarr"
                 assert java.nio.file.Files.isDirectory(path(slide).resolve('images/wsi'))
