@@ -41,6 +41,7 @@ workflow NFCORE_HISTOPATHOLOGY {
         samplesheet,
         params.stain_normalization,
         params.stain_reference?.toString(),
+        params.tissue_segmentation_method,
         params.tile_px,
         params.tile_mpp == null ? '' : params.tile_mpp,
         params.tile_overlap,

@@ -42,6 +42,8 @@ The pipeline fits the selected reference slide once and uses it to normalize eve
 
 ## Tiling and quality control
 
+Set `--tissue_segmentation_method` to one or more comma-separated methods. Choose `otsu` (the default), `entropy`, `grandqc-tissue`, `hest-tissue-segmentation`, or `pathprofiler`. The first method supplies the mask for normalization, tiling, and downstream analysis. All selected methods write masks and MultiQC previews. The learned methods use the slide's pixel size from the file metadata or samplesheet.
+
 The pipeline tiles the tissue on each ingested slide and writes `<OUTDIR>/tiles/<sample>.tiles.zarr`. It defaults to 256 × 256 pixels at the slide's native resolution, with no overlap and at most 30% background per tile. Set `--tile_px`, `--tile_mpp`, `--tile_overlap`, or `--tile_background_fraction` to change these values.
 
 The pipeline measures brightness, contrast, sharpness, and saturation on the original slide tiles. It writes `<sample>.tileqc.zarr` to `<OUTDIR>/qc/`. FocusLiteNN, PathProfilerQC, and GrandQC load their default model weights through LazySlide. They write `<sample>.focuslitenn.zarr`, `<sample>.pathprofilerqc.zarr`, and `<sample>.grandqc.zarr` to `<OUTDIR>/qc/`.
@@ -56,12 +58,13 @@ Set `--segmentation_model instanseg` to segment nuclei. Segmentation uses the no
 | --- | --- | --- |
 | `instanseg` | Nuclei | 512 × 512 px |
 | `cellpose` | Objects detected by the Cellpose checkpoint | 256 × 256 px |
+| `classpose` | Instances with cell-type labels | 256 × 256 px |
 | `nulite` | Nuclei with cell-type labels | 256 × 256 px |
 | `histoplus` | Nuclei with cell-type labels | 224 × 224 px |
 
 Set `--segmentation_mpp` to choose the tile resolution for all selected segmentation models. The default is 0.5 µm/px with 12.5% overlap. Use a resolution compatible with each selected checkpoint and supply calibrated slides scanned at that resolution or finer. Selected models with the same tile size share a grid. The pipeline reuses the regular grid if its size, MPP, and overlap match the model settings. For example, `--tile_px 512 --tile_mpp 0.5 --tile_overlap 0.125` shares the grid between InstanSeg and tile QC at the default segmentation resolution.
 
-InstanSeg, Cellpose, and NuLite load their public default weights on the compute worker.
+InstanSeg, Cellpose, Classpose, and NuLite load their public default weights on the compute worker. Classpose uses the CoNIC checkpoint, which expects 0.5 µm/px.
 
 For HistoPLUS, request access on the [model page](https://huggingface.co/Owkin-Bioptimus/histoplus) and store a Hugging Face read token with access to the repository as the `HF_TOKEN` [Nextflow secret](https://docs.seqera.io/nextflow/secrets). LazySlide downloads the 20× checkpoint on the compute worker.
 

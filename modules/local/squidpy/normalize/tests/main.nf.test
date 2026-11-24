@@ -34,7 +34,7 @@ nextflow_process {
                 script "../../../lazyslide/findtissues/main.nf"
                 process {
                     """
-                    input[0] = WSIDATA_INGEST.out.slide
+                    input[0] = WSIDATA_INGEST.out.slide.map { meta, slide -> [meta, slide, 'otsu'] }
                     """
                 }
             }
@@ -43,7 +43,7 @@ nextflow_process {
         when {
             process {
                 """
-                input[0] = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask)
+                input[0] = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask.map { meta, mask, _method -> [meta, mask] })
                 input[1] = []
                 input[2] = 'reinhard'
                 input[3] = true
@@ -100,7 +100,7 @@ nextflow_process {
                 script "../../../lazyslide/findtissues/main.nf"
                 process {
                     """
-                    input[0] = WSIDATA_INGEST.out.slide
+                    input[0] = WSIDATA_INGEST.out.slide.map { meta, slide -> [meta, slide, 'otsu'] }
                     """
                 }
             }
@@ -111,7 +111,7 @@ nextflow_process {
                 """
                 def reference_path = java.nio.file.Files.createTempFile('squidpy-reference', '.json')
                 reference_path.toFile().text = '{"reference_sample":"reference","fit":{"method":"reinhard","mu":[8.5,0.2,0.1],"sigma":[0.25,0.08,0.06]}}'
-                input[0] = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask)
+                input[0] = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask.map { meta, mask, _method -> [meta, mask] })
                 input[1] = reference_path
                 input[2] = 'reinhard'
                 input[3] = false

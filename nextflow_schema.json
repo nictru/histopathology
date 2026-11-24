@@ -71,8 +71,8 @@
                 "segmentation_model": {
                     "type": "string",
                     "default": "none",
-                    "pattern": "^(none|(instanseg|cellpose|nulite|histoplus)(, *(instanseg|cellpose|nulite|histoplus))*)$",
-                    "description": "Comma-separated models for instance segmentation: instanseg, cellpose, nulite, or histoplus. Use none to skip segmentation."
+                    "pattern": "^(none|(instanseg|cellpose|classpose|nulite|histoplus)(, *(instanseg|cellpose|classpose|nulite|histoplus))*)$",
+                    "description": "Comma-separated models for instance segmentation: instanseg, cellpose, classpose, nulite, or histoplus. Use none to skip segmentation."
                 },
                 "segmentation_mpp": {
                     "type": "number",
@@ -108,6 +108,12 @@
             "fa_icon": "fas fa-th",
             "description": "Configure tissue tiling and optional model-based quality control.",
             "properties": {
+                "tissue_segmentation_method": {
+                    "type": "string",
+                    "default": "otsu",
+                    "pattern": "^(otsu|entropy|grandqc-tissue|hest-tissue-segmentation|pathprofiler)(, *(otsu|entropy|grandqc-tissue|hest-tissue-segmentation|pathprofiler))*$",
+                    "description": "Comma-separated tissue segmentation methods. The first mask is used for downstream analysis."
+                },
                 "tile_px": {
                     "type": "integer",
                     "minimum": 1,

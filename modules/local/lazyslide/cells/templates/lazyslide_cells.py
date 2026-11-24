@@ -14,11 +14,11 @@ os.environ.setdefault("HF_HUB_DISABLE_IMPLICIT_TOKEN", "0")
 os.environ.setdefault("CELLPOSE_LOCAL_MODELS_PATH", str(Path(".cellpose").resolve()))
 
 import matplotlib
-import numpy as np
 import torch
 from lazyslide import open_wsi, seg
 from lazyslide_models import MODEL_REGISTRY
 from matplotlib.figure import Figure
+from matplotlib.patches import Patch
 from shapely.geometry import box
 from spatialdata import SpatialData, read_zarr
 
@@ -88,7 +88,7 @@ def load_model(name, device):
     return MODEL_REGISTRY[name]()
 
 
-def plot_instances(wsi, shapes):
+def instance_crop(wsi, shapes):
     # Center the crop on a detected instance so sparse slides still show a mask.
     center = shapes.geometry.iloc[len(shapes) // 2].representative_point()
     slide_height, slide_width = wsi.properties.shape
@@ -98,36 +98,50 @@ def plot_instances(wsi, shapes):
     indices = shapes.sindex.query(
         box(x, y, x + width, y + height), predicate="intersects"
     )
-    instances = shapes.iloc[indices].assign(preview_color=np.arange(len(indices)) % 20)
-
-    figure = Figure(figsize=(5, 5), layout="constrained")
-    ax = figure.subplots()
-    ax.imshow(
-        wsi.reader.get_region(x, y, width, height),
-        extent=(x, x + width, y + height, y),
-        origin="upper",
-        interpolation="nearest",
-    )
-    instances.plot(
-        ax=ax,
-        column="preview_color",
-        cmap="tab20",
-        vmin=0,
-        vmax=19,
-        linewidth=0,
-        alpha=0.45,
-    )
-    ax.set(xlim=(x, x + width), ylim=(y + height, y))
-    ax.set_axis_off()
     return (
-        figure,
+        wsi.reader.get_region(x, y, width, height),
+        (x, x + width, y + height, y),
+        shapes.iloc[indices],
         f"{len(shapes):,} instances slide-wide. Crop origin: x={x:,}, y={y:,} (level 0 pixels).",
     )
 
 
+def plot_instances(image, extent, instances, class_colors=None):
+    figure = Figure(figsize=(5, 5), layout="constrained")
+    ax = figure.subplots()
+    ax.imshow(
+        image,
+        extent=extent,
+        origin="upper",
+        interpolation="nearest",
+    )
+    if class_colors is None:
+        palette = matplotlib.colormaps["tab20"].colors
+        colors = [palette[index % len(palette)] for index in range(len(instances))]
+    else:
+        labels = instances["class"].astype("string").fillna("Unclassified")
+        visible = {
+            label: class_colors.get(label, "#757575") for label in sorted(set(labels))
+        }
+        colors = [visible[label] for label in labels]
+        ax.legend(
+            handles=[
+                Patch(facecolor=color, label=label) for label, color in visible.items()
+            ],
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.02),
+            ncols=2,
+            frameon=False,
+        )
+    instances.plot(ax=ax, color=colors, linewidth=0, alpha=0.45)
+    ax.set(xlim=extent[:2], ylim=extent[2:])
+    ax.set_axis_off()
+    return figure
+
+
 name = "${model}"
 device = torch.device("${task.accelerator ? 'cuda' : 'cpu'}")
-shape_key = "cells" if name == "cellpose" else "nuclei"
+shape_key = "cells" if name in ("cellpose", "classpose") else "nuclei"
 grid = read_zarr("tiles.zarr")
 tile_spec = grid.attrs["tile_spec"].get("tiles")
 shapes = {}
@@ -144,9 +158,10 @@ if tile_spec:
     slide.attrs["tile_spec"] = grid.attrs["tile_spec"]
     wsi = open_wsi(slide, image_key="wsi")
     torch.set_num_threads(int("${task.cpus}"))
+    segmenter = load_model(name, device)
     seg.cells(
         wsi,
-        model=load_model(name, device),
+        model=segmenter,
         batch_size=1,
         device=device,
         amp=False,
@@ -161,7 +176,7 @@ segmentation = {
     "model": name,
     "device": device.type,
     "weight_source": "cellpose" if name == "cellpose" else "lazyslide_registry",
-    "instance_type": "model_defined" if name == "cellpose" else "nucleus",
+    "instance_type": "model_defined" if shape_key == "cells" else "nucleus",
     "instance_count": len(shapes[shape_key]) if shapes else 0,
     "tile_spec": tile_spec,
 }
@@ -173,7 +188,23 @@ instances = shapes.get(shape_key)
 figure, note = (None, "No instances detected.")
 if instances is not None and not instances.empty:
     original = open_wsi(read_zarr("original.zarr"), image_key="wsi")
-    figure, note = plot_instances(original, instances)
+    image, extent, cropped, note = instance_crop(original, instances)
+    figure = plot_instances(image, extent, cropped)
+    if "class" in cropped and instances["class"].notna().any():
+        class_names = [
+            label for label in segmenter.classes if label.casefold() != "background"
+        ]
+        palette = matplotlib.colormaps["tab20"].colors
+        class_colors = dict(zip(class_names, (*palette[::2], *palette[1::2])))
+        write_multiqc(
+            "${prefix}.${model}.cell_types_mqc.json",
+            kind="cell_types",
+            section="Cell type segmentation",
+            description="Instance masks colored by predicted cell type on crops of the original slides.",
+            sample="${meta.id}" + f" · {name}",
+            figure=plot_instances(image, extent, cropped, class_colors),
+            note=note,
+        )
 write_multiqc(
     "${prefix}.${model}.cells_mqc.json",
     kind="segmentation",
@@ -193,7 +224,7 @@ packages = [
     "torch",
     "wsidata",
 ]
-if name == "cellpose":
+if name in ("cellpose", "classpose"):
     packages.append("cellpose")
 versions = {package: version(package) for package in packages}
 Path("versions.yml").write_text(json.dumps({"${task.process}": versions}) + chr(10))

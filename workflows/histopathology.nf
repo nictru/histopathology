@@ -28,6 +28,7 @@ workflow HISTOPATHOLOGY {
     ch_samplesheet // channel: samplesheet read in from --input
     stain_normalization
     stain_reference
+    tissue_segmentation_method
     tile_px
     tile_mpp
     tile_overlap
@@ -48,9 +49,14 @@ workflow HISTOPATHOLOGY {
         [meta, slide, meta.scene, meta.mpp]
     }
     WSIDATA_INGEST(ch_ingest)
-    LAZYSLIDE_FINDTISSUES(WSIDATA_INGEST.out.slide)
+    def tissue_methods = tissue_segmentation_method.split(',', -1).collect { method -> method.trim() }.unique()
+    def ch_tissue_inputs = WSIDATA_INGEST.out.slide.combine(channel.fromList(tissue_methods))
+    LAZYSLIDE_FINDTISSUES(ch_tissue_inputs)
 
-    def ch_slides_with_masks = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask)
+    def ch_primary_masks = LAZYSLIDE_FINDTISSUES.out.mask
+        .filter { _meta, _mask, method -> method == tissue_methods[0] }
+        .map { meta, mask, _method -> tuple(meta, mask) }
+    def ch_slides_with_masks = WSIDATA_INGEST.out.slide.join(ch_primary_masks)
 
     LAZYSLIDE_TILETISSUES(ch_slides_with_masks, tile_px, tile_mpp, tile_overlap, tile_background_fraction)
     def ch_tiles = LAZYSLIDE_TILETISSUES.out.tiles.map { meta, tiles, _pixels -> [meta, tiles] }
@@ -76,7 +82,7 @@ workflow HISTOPATHOLOGY {
     def ch_cells = channel.empty()
     def ch_segmentation_agreement = channel.empty()
     if (segmentation_models) {
-        def unsupported_models = segmentation_models - ['instanseg', 'cellpose', 'nulite', 'histoplus']
+        def unsupported_models = segmentation_models - ['instanseg', 'cellpose', 'classpose', 'nulite', 'histoplus']
         if (unsupported_models) {
             error("Unsupported segmentation models: ${unsupported_models.join(', ')}.")
         }

@@ -2,11 +2,15 @@
 
 import base64
 import json
+import os
 from html import escape
 from importlib.metadata import version
 from io import BytesIO
 from math import ceil
 from pathlib import Path
+
+os.environ.setdefault("HF_HOME", str(Path(".huggingface").resolve()))
+os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 
 import dask
 import dask.array as da
@@ -14,10 +18,11 @@ import matplotlib
 import numpy as np
 import zarr
 from dask_image.ndinterp import affine_transform
-from lazyslide import open_wsi, pp
+from lazyslide import open_wsi, pp, seg
 from matplotlib.colors import ListedColormap
 from matplotlib.figure import Figure
 from rasterio.features import rasterize
+from rasterio.transform import Affine
 from spatialdata import SpatialData, read_zarr
 from spatialdata._io import write_labels
 from spatialdata.models import Image2DModel, Labels2DModel
@@ -63,7 +68,7 @@ TISSUE = "wsi_tissue"
 PREVIEW_EDGE = 2048
 
 
-def detect_preview(levels):
+def preview_pixels(levels):
     preview = next(
         (
             level
@@ -77,26 +82,73 @@ def detect_preview(levels):
         preview = (
             preview.coarsen(factors, boundary="pad").mean().round().astype(np.uint8)
         )
-    pixels = preview.data.compute()
+    return preview.data.compute()
+
+
+def padded_grandqc():
+    from lazyslide_models.segmentation import GrandQCTissue
+    from torch.nn.functional import pad
+
+    class PaddedGrandQCTissue(GrandQCTissue):
+        def segment(self, image):
+            height, width = image.shape[-2:]
+            if min(height, width) >= 64:
+                return super().segment(image)
+
+            # The exported graph requires at least two 32-pixel blocks per axis.
+            extra_h, extra_w = max(64 - height, 0), max(64 - width, 0)
+            top, left = extra_h // 2, extra_w // 2
+            padded = pad(image, (left, extra_w - left, top, extra_h - top))
+            result = super().segment(padded)
+            return result._replace(
+                probability_map=result.probability_map[
+                    ..., top : top + height, left : left + width
+                ]
+            )
+
+    return PaddedGrandQCTissue()
+
+
+def detect_mask(slide, full_level, pixels, method):
     shape = pixels.shape[1:]
-    if np.ptp(pixels, axis=(1, 2)).any():
-        preview_wsi = open_wsi(
+    if not np.ptp(pixels, axis=(1, 2)).any():
+        return np.zeros(shape, dtype=np.uint8)
+
+    transform = Affine.identity()
+    if method in ("otsu", "entropy"):
+        wsi = open_wsi(
             SpatialData(images={IMAGE: Image2DModel.parse(pixels)}), image_key=IMAGE
         )
         pp.find_tissues(
-            preview_wsi,
+            wsi,
             level=0,
-            method="otsu",
+            method=method,
             to_hsv=True,
             threshold=None,
             filter_artifacts=False,
             in_bounds=False,
         )
-        if "tissues" in preview_wsi.shapes:
-            return pixels, rasterize(
-                preview_wsi.shapes["tissues"].geometry, out_shape=shape, dtype="uint8"
+    else:
+        import torch
+
+        wsi = open_wsi(slide, image_key=IMAGE)
+        if not wsi.properties.mpp:
+            raise ValueError(
+                f"{method} requires a slide pixel size. Supply mpp in the samplesheet."
             )
-    return pixels, np.zeros(shape, dtype=np.uint8)
+        torch.set_num_threads(int("${task.cpus}"))
+        model = padded_grandqc() if method == "grandqc-tissue" else method
+        seg.tissue(wsi, model=model, device="cpu", amp=False, compile=False)
+        transform = Affine.scale(
+            full_level.sizes["x"] / shape[1], full_level.sizes["y"] / shape[0]
+        )
+
+    tissues = wsi.shapes.get("tissues")
+    if tissues is None or tissues.empty:
+        return np.zeros(shape, dtype=np.uint8)
+    return rasterize(
+        tissues.geometry, out_shape=shape, transform=transform, dtype="uint8"
+    )
 
 
 def labels_for_level(mask, level):
@@ -124,14 +176,17 @@ def labels_for_level(mask, level):
     )
 
 
-image = read_zarr("source.zarr").images[IMAGE]
+method = "${method}"
+slide = read_zarr("source.zarr")
+image = slide.images[IMAGE]
 levels = (
     [level.image for level in image.children.values()]
     if isinstance(image, DataTree)
     else [image]
 )
 with dask.config.set(scheduler="threads", num_workers=int("${task.cpus}")):
-    preview, mask = detect_preview(levels)
+    preview = preview_pixels(levels)
+    mask = detect_mask(slide, levels[0], preview, method)
     labels = labels_for_level(mask, levels[0])
     if len(levels) > 1:
         # Squidpy samples at the coarsest level and applies the mask at full resolution.
@@ -141,14 +196,11 @@ with dask.config.set(scheduler="threads", num_workers=int("${task.cpus}")):
                 "scale1": labels_for_level(mask, levels[-1]).to_dataset(name="image"),
             }
         )
-    attrs = {
-        "tissue_detection": {
-            "method": "otsu",
-            "channel": "saturation",
-            "has_tissue": bool(mask.any()),
-        }
-    }
-    output = "${prefix}.tissue.zarr"
+    detection = {"method": method, "has_tissue": bool(mask.any())}
+    if method == "otsu":
+        detection["channel"] = "saturation"
+    attrs = {"tissue_detection": detection}
+    output = "${mask_prefix}.tissue.zarr"
     SpatialData(attrs=attrs).write(output, consolidate_metadata=False)
     root = zarr.open_group(output, mode="r+")
     write_labels(
@@ -173,17 +225,17 @@ ax.imshow(
 )
 ax.set_axis_off()
 write_multiqc(
-    "${prefix}.tissue_mqc.json",
+    "${mask_prefix}.tissue_mqc.json",
     kind="tissue",
     section="Tissue masks",
-    description="Tissue masks used to select tiles, overlaid on the original slides.",
-    sample="${meta.id}",
+    description="Tissue segmentation masks overlaid on the original slides.",
+    sample="${meta.id}" + f" · {method}",
     figure=figure,
     note="" if mask.any() else "No tissue detected.",
 )
 
-versions = {
-    name: version(name)
-    for name in ("lazyslide", "matplotlib", "spatialdata", "wsidata")
-}
+packages = ["lazyslide", "matplotlib", "spatialdata", "wsidata"]
+if method not in ("otsu", "entropy"):
+    packages.extend(["lazyslide-models", "torch"])
+versions = {name: version(name) for name in packages}
 Path("versions.yml").write_text(json.dumps({"${task.process}": versions}) + chr(10))

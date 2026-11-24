@@ -23,6 +23,7 @@ process LAZYSLIDE_CELLS {
     output:
     tuple val(meta), path("${prefix}.${model}.cells.zarr"), emit: cells
     path "${prefix}.${model}.cells_mqc.json", emit: multiqc_files
+    path "${prefix}.${model}.cell_types_mqc.json", optional: true, emit: cell_types_multiqc
     path "versions.yml", emit: versions, topic: versions
 
     when:
@@ -33,16 +34,20 @@ process LAZYSLIDE_CELLS {
     if (!(prefix ==~ /[A-Za-z0-9_][A-Za-z0-9_.-]*/)) {
         error("Unsafe output prefix: ${prefix}")
     }
-    if (!(model in ['instanseg', 'cellpose', 'nulite', 'histoplus'])) {
+    if (!(model in ['instanseg', 'cellpose', 'classpose', 'nulite', 'histoplus'])) {
         error("Unsupported segmentation model: ${model}")
     }
     template('lazyslide_cells.py')
 
     stub:
     prefix = task.ext.prefix ?: "${meta.id}"
+    def class_preview = model in ['classpose', 'histoplus', 'nulite']
+        ? "touch '${prefix}.${model}.cell_types_mqc.json'"
+        : ''
     """
     mkdir '${prefix}.${model}.cells.zarr'
     touch '${prefix}.${model}.cells_mqc.json'
+    ${class_preview}
     echo '{}' > versions.yml
     """
 }

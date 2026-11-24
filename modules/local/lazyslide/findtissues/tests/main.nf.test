@@ -37,7 +37,7 @@ nextflow_process {
         when {
             process {
                 """
-                input[0] = WSIDATA_INGEST.out.slide
+                input[0] = WSIDATA_INGEST.out.slide.combine(channel.of('otsu', 'entropy', 'grandqc-tissue'))
                 """
             }
         }
@@ -45,14 +45,16 @@ nextflow_process {
         then {
             assert process.success
             def previews = process.out.multiqc_files.collect { path(it).json }.sort { it.section_name }
-            assert previews*.section_name == ['blank', 'tissue']
+            assert previews*.section_name == ['blank · entropy', 'blank · grandqc-tissue', 'blank · otsu', 'tissue · entropy', 'tissue · grandqc-tissue', 'tissue · otsu']
             previews.each { preview ->
                 assert preview.parent_id == 'histopathology_tissue'
                 assert preview.plot_type == 'image'
                 assert preview.data.contains('data:image/jpeg;base64,')
-                assert preview.data.contains('No tissue detected.') == (preview.section_name == 'blank')
+                if (preview.section_name.startsWith('blank')) {
+                    assert preview.data.contains('No tissue detected.')
+                }
             }
-            def image_data = (previews[1].data =~ /data:image\/jpeg;base64,([^"]+)/)
+            def image_data = (previews.find { it.section_name == 'tissue · otsu' }.data =~ /data:image\/jpeg;base64,([^"]+)/)
             assert image_data.find()
             def image = javax.imageio.ImageIO.read(new ByteArrayInputStream(image_data.group(1).decodeBase64()))
             def center = new java.awt.Color(image.getRGB(image.width.intdiv(2), image.height.intdiv(2)))
@@ -62,10 +64,11 @@ nextflow_process {
             assert Math.abs(center.blue - 157) < 10
             assert [background.red, background.green, background.blue].every { it > 245 }
 
-            def results = process.out.mask.sort { it[0].id }.collect { meta, mask ->
-                assert path(mask).fileName.toString() == "${meta.id}.tissue.zarr"
+            assert process.out.mask.size() == 6
+            def results = process.out.mask.sort { it[0].id }.collect { meta, mask, method ->
+                assert path(mask).fileName.toString() == "${meta.id}.${method}.tissue.zarr"
                 def root = path(path(mask).resolve('zarr.json').toString()).json
-                assert root.attributes.tissue_detection.method == 'otsu'
+                assert root.attributes.tissue_detection.method == method
                 def labels = path(mask).resolve('labels/wsi_tissue')
                 def multiscale = path(labels.resolve('zarr.json').toString()).json.attributes.ome.multiscales[0]
                 def shapes = multiscale.datasets.collect { level ->
@@ -76,10 +79,14 @@ nextflow_process {
                     raster.shape
                 }
                 assert shapes == [[270, 300], [135, 150]]
-                [meta.id, root.attributes.tissue_detection.has_tissue]
+                if (meta.id == 'blank') {
+                    assert !root.attributes.tissue_detection.has_tissue
+                }
+                [meta.id, root.attributes.tissue_detection.has_tissue, method]
             }
-            assert results == [['blank', false], ['tissue', true]]
-            assert snapshot(results).match()
+            def otsu_results = results.findAll { it[2] == 'otsu' }.collect { it.take(2) }
+            assert otsu_results == [['blank', false], ['tissue', true]]
+            assert snapshot(otsu_results).match()
         }
     }
 }

@@ -47,7 +47,7 @@ class Segmentation:
 def read_segmentation(path):
     store = read_zarr(path)
     model = store.attrs["segmentation"]["model"]
-    layer = "cells" if model == "cellpose" else "nuclei"
+    layer = "cells" if "cells" in store.shapes else "nuclei"
     geometry = np.empty(0, dtype=object)
     if layer in store.shapes:
         shapes = store.shapes[layer]

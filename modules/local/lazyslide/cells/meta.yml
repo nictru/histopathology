@@ -30,7 +30,7 @@ input:
     - model:
         type: string
         description: LazySlide segmentation model.
-        enum: [instanseg, cellpose, nulite, histoplus]
+        enum: [instanseg, cellpose, classpose, nulite, histoplus]
 output:
   cells:
     - - meta:
@@ -45,6 +45,11 @@ output:
         type: file
         description: Instance mask overlay on a crop from the original slide.
         pattern: "*_mqc.json"
+  cell_types_multiqc:
+    - "${prefix}.${model}.cell_types_mqc.json":
+        type: file
+        description: Class-colored mask overlay on the original slide for models that return cell-type labels.
+        pattern: "*.cell_types_mqc.json"
   versions:
     - versions.yml:
         type: file

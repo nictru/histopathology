@@ -34,11 +34,12 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 
 The report includes these views for each slide.
 
-- **Tissue masks** show a semi-transparent overlay of the detected tissue on the original slide.
+- **Tissue masks** show a semi-transparent overlay on the original slide for each selected tissue method. Find the masks at `tissue_masks/<sample>.<method>.tissue.zarr`. With the default Otsu-only run, the filename is `<sample>.tissue.zarr`.
 - **Slide QC** overlays GrandQC artifact classes on the original slide.
 - **Tile QC** displays spatial score maps for the image metrics, FocusLiteNN, and PathProfilerQC. Each map uses its observed score range and averages scores where tiles overlap.
 - **Stain normalization** shows matching original and normalized slide thumbnails when normalization runs.
 - **Segmentation masks** show semi-transparent cell or nucleus masks on a crop of the original slide for each selected model. Each crop centers on a detected instance.
+- **Cell type segmentation** shows the same crop with instances colored by predicted class when the model returns cell-type labels.
 - **Segmentation agreement** appears when two or more segmentation methods run. Switch metric tabs to compare methods on a fixed 0–1 scale. Each heatmap uses the same hierarchical order, based on instance F1. The dendrogram groups methods with detections, and methods without detections appear after them.
 
 The report embeds thumbnails and detail crops. Use the corresponding Zarr outputs for full-resolution images, masks, geometries, and tile scores.

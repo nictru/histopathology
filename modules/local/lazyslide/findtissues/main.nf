@@ -1,5 +1,5 @@
 process LAZYSLIDE_FINDTISSUES {
-    tag "${meta.id}"
+    tag "${meta.id} (${method})"
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
@@ -8,11 +8,11 @@ process LAZYSLIDE_FINDTISSUES {
         : 'community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:f73e7431e9863fc5'}"
 
     input:
-    tuple val(meta), path(slide, stageAs: 'source.zarr')
+    tuple val(meta), path(slide, stageAs: 'source.zarr'), val(method)
 
     output:
-    tuple val(meta), path("${prefix}.tissue.zarr"), emit: mask
-    path "${prefix}.tissue_mqc.json", emit: multiqc_files
+    tuple val(meta), path("${mask_prefix}.tissue.zarr"), val(method), emit: mask
+    path "${mask_prefix}.tissue_mqc.json", emit: multiqc_files
     path "versions.yml", emit: versions, topic: versions
 
     when:
@@ -23,6 +23,10 @@ process LAZYSLIDE_FINDTISSUES {
     if (!(prefix ==~ /[A-Za-z0-9_][A-Za-z0-9_.-]*/)) {
         error("Unsafe output prefix: ${prefix}")
     }
+    if (!(method in ['otsu', 'entropy', 'grandqc-tissue', 'hest-tissue-segmentation', 'pathprofiler'])) {
+        error("Unsupported tissue segmentation method: ${method}")
+    }
+    mask_prefix = "${prefix}.${method}"
     template('lazyslide_findtissues.py')
 
     stub:
@@ -30,9 +34,10 @@ process LAZYSLIDE_FINDTISSUES {
     if (!(prefix ==~ /[A-Za-z0-9_][A-Za-z0-9_.-]*/)) {
         error("Unsafe output prefix: ${prefix}")
     }
+    mask_prefix = "${prefix}.${method}"
     """
-    mkdir '${prefix}.tissue.zarr'
-    touch '${prefix}.tissue_mqc.json'
+    mkdir '${mask_prefix}.tissue.zarr'
+    touch '${mask_prefix}.tissue_mqc.json'
     echo '{}' > versions.yml
     """
 }

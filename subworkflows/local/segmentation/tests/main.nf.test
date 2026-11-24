@@ -13,7 +13,7 @@ nextflow_workflow {
     ["reuse", "retile", "shared", "mixed"].each { mode ->
         test("Segmentation grid selection - ${mode}") {
             options "-stub-run"
-            def models = [shared: ['cellpose', 'nulite'], mixed: ['cellpose', 'histoplus', 'instanseg', 'nulite']].get(mode, ['instanseg'])
+            def models = [shared: ['cellpose', 'classpose', 'nulite'], mixed: ['cellpose', 'histoplus', 'instanseg', 'nulite']].get(mode, ['instanseg'])
             def samples = mode == 'mixed' ? ['sample', 'sample-2'] : ['sample']
             def target_mpp = mode == 'reuse' ? 0.9091 : 0.5
 
@@ -48,7 +48,7 @@ nextflow_workflow {
                 def expected = [
                     reuse: ['LAZYSLIDE_CELLS'],
                     retile: ['LAZYSLIDE_CELLS', 'SEGMENTATION_TILETISSUES'],
-                    shared: ['LAZYSLIDE_CELLS', 'LAZYSLIDE_CELLS', 'SEGMENTATION_TILETISSUES', 'SPATIALDATA_SEGMENTATIONAGREEMENT'],
+                    shared: ['LAZYSLIDE_CELLS'] * 3 + ['SEGMENTATION_TILETISSUES', 'SPATIALDATA_SEGMENTATIONAGREEMENT'],
                     mixed: ['LAZYSLIDE_CELLS'] * 8 + ['SEGMENTATION_TILETISSUES'] * 4 + ['SPATIALDATA_SEGMENTATIONAGREEMENT'] * 2,
                 ]
                 assert tasks == expected[mode]
@@ -65,6 +65,10 @@ nextflow_workflow {
                 def previews = workflow.out.multiqc_files.collect { path(it).fileName.toString() }.sort()
                 def expected_previews = expected_results.collect { it[1].replace('.zarr', '_mqc.json') }
                 expected_previews += compared_samples.collect { it + '.segmentation_agreement_mqc.json' }
+                def typed_models = models.intersect(['classpose', 'histoplus', 'nulite'])
+                expected_previews += samples.collectMany { id ->
+                    typed_models.collect { model -> id + '.' + model + '.cell_types_mqc.json' }
+                }
                 assert previews == expected_previews.sort()
                 if (mode in ['reuse', 'retile']) {
                     assert snapshot(results).match()

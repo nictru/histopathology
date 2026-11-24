@@ -19,17 +19,24 @@ input:
         type: directory
         description: WSIData store with its RGB image under the wsi key.
         pattern: "*.zarr"
+    - method:
+        type: string
+        description: LazySlide tissue segmentation method.
+        enum: [otsu, entropy, grandqc-tissue, hest-tissue-segmentation, pathprofiler]
 output:
   mask:
     - - meta:
           type: map
           description: Sample metadata containing the slide ID.
-      - "${prefix}.tissue.zarr":
+      - "${mask_prefix}.tissue.zarr":
           type: directory
           description: SpatialData store with an aligned binary label under the wsi_tissue key.
           pattern: "*.tissue.zarr"
+      - method:
+          type: string
+          description: Method used to generate the mask.
   multiqc_files:
-    - "${prefix}.tissue_mqc.json":
+    - "${mask_prefix}.tissue_mqc.json":
         type: file
         description: Tissue mask overlay on the original slide.
         pattern: "*_mqc.json"

@@ -18,6 +18,7 @@ workflow SEGMENTATION {
     def tile_sizes = [
         instanseg: 512,
         cellpose: 256,
+        classpose: 256,
         nulite: 256,
         histoplus: 224,
     ]
@@ -49,7 +50,7 @@ workflow SEGMENTATION {
     LAZYSLIDE_CELLS(ch_inputs)
 
     def ch_agreement = channel.empty()
-    def ch_multiqc_files = LAZYSLIDE_CELLS.out.multiqc_files
+    def ch_multiqc_files = LAZYSLIDE_CELLS.out.multiqc_files.mix(LAZYSLIDE_CELLS.out.cell_types_multiqc)
     if (selected_models.size() > 1) {
         def ch_segmentations = LAZYSLIDE_CELLS.out.cells
             .groupTuple(size: selected_models.size())

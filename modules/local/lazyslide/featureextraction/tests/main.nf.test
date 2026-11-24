@@ -32,7 +32,7 @@ nextflow_process {
                 script "../../findtissues/main.nf"
                 process {
                     """
-                    input[0] = WSIDATA_INGEST.out.slide
+                    input[0] = WSIDATA_INGEST.out.slide.map { meta, slide -> [meta, slide, 'otsu'] }
                     """
                 }
             }
@@ -40,7 +40,7 @@ nextflow_process {
                 script "../../tiletissues/main.nf"
                 process {
                     """
-                    input[0] = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask)
+                    input[0] = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask.map { meta, mask, _method -> [meta, mask] })
                     input[1] = 256
                     input[2] = 0.5
                     input[3] = 0
