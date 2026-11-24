@@ -67,7 +67,11 @@ Set `--segmentation_model instanseg` to segment nuclei on stain-normalized slide
 
 Set `--segmentation_mpp` to choose the tile resolution for all selected segmentation models. The default is 0.5 µm/px with 12.5% overlap. Use a resolution compatible with each selected checkpoint and supply calibrated slides scanned at that resolution or finer. Selected models with the same tile size share a grid. The pipeline reuses the regular grid if its size, MPP, and overlap match the model settings. For example, `--tile_px 512 --tile_mpp 0.5 --tile_overlap 0.125` shares the grid between InstanSeg and tile QC at the default segmentation resolution.
 
-InstanSeg, Cellpose, and NuLite use pinned public weights by default. Use the corresponding checkpoint parameter to supply a compatible file or URL. To run HistoPLUS, pass an authorized copy of `histoplus_cellvit_segmentor_20x.pt` to `--histoplus_checkpoint`.
+InstanSeg, Cellpose, and NuLite use pinned public weights by default. Use the corresponding checkpoint parameter to supply a compatible file or URL.
+
+For HistoPLUS, request access on the [model page](https://huggingface.co/Owkin-Bioptimus/histoplus) and store a Hugging Face read token with access to the repository as the `HF_TOKEN` [Nextflow secret](https://docs.seqera.io/nextflow/secrets). The pipeline downloads the pinned 20× checkpoint once and stages it from the work directory. Use a work directory restricted to authorized users.
+
+For AWS Batch runs launched from Seqera Platform, configure the secret in Platform. For AWS Batch runs launched directly from the CLI, supply an authorized checkpoint file or URI with `--histoplus_checkpoint`.
 
 Find results in `<OUTDIR>/segmentation/<sample>.<model>.cells.zarr`. The `nuclei` or `cells` shapes are in the slide coordinate system. Each store records the model, checkpoint filename, device, tile specification, and instance count. A slide with zero detections has an instance count of zero and no shapes layer.
 

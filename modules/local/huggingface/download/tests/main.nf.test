@@ -1,0 +1,47 @@
+nextflow_process {
+    name "Test HUGGINGFACE_DOWNLOAD"
+    script "../main.nf"
+    process "HUGGINGFACE_DOWNLOAD"
+
+    tag "modules"
+    tag "modules_local"
+    tag "huggingface/download"
+
+    test("Download a pinned public file without a secret") {
+        when {
+            process {
+                """
+                input[0] = 'model'
+                input[1] = 'hf-internal-testing/tiny-random-bert'
+                input[2] = 'f171d7baecaf37b5da5a3616d8833b9969753535'
+                input[3] = 'config.json'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert path(process.out.resource[0]).json.model_type == 'bert'
+            assert snapshot(process.out.resource, process.out.versions_huggingface_hub).match()
+        }
+    }
+
+    test("Stage a nested file - stub") {
+        options "-stub-run"
+        when {
+            process {
+                """
+                input[0] = 'dataset'
+                input[1] = 'example/dataset'
+                input[2] = 'f171d7baecaf37b5da5a3616d8833b9969753535'
+                input[3] = 'nested/resource.txt'
+                """
+            }
+        }
+        then {
+            assert process.success
+            assert path(process.out.resource[0]).parent.fileName.toString() == 'nested'
+            assert snapshot(process.out.resource, process.out.versions_huggingface_hub).match()
+        }
+    }
+}

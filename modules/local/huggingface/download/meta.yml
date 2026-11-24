@@ -1,0 +1,71 @@
+name: huggingface_download
+description: Download a file from the Hugging Face Hub at an immutable revision, using the HF_TOKEN secret when configured.
+keywords:
+  - download
+  - huggingface
+  - model
+  - dataset
+tools:
+  - huggingface_hub:
+      description: Client for accessing models, datasets, and spaces on the Hugging Face Hub.
+      homepage: https://huggingface.co/docs/huggingface_hub/
+      documentation: https://huggingface.co/docs/huggingface_hub/en/guides/cli
+      tool_dev_url: https://github.com/huggingface/huggingface_hub
+      licence: ["Apache-2.0"]
+input:
+  - repo_type:
+      type: string
+      description: Hugging Face repository type (model, dataset, or space).
+  - repo_id:
+      type: string
+      description: Hugging Face repository ID, typically in owner/name form.
+  - revision:
+      type: string
+      description: Full 40-character commit hash for the revision to download.
+  - filename:
+      type: string
+      description: Path to the file within the repository.
+output:
+  resource:
+    - "download/${filename}":
+        type: file
+        description: The downloaded file.
+  versions_huggingface_hub:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: "versions.yml"
+topics:
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: "versions.yml"
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/arm64:
+      name: community.wave.seqera.io/library/huggingface_hub_python:3c261ef70fd9d9d2
+      build_id: bd-3c261ef70fd9d9d2_1
+      scan_id: sc-385280ce85cd6bb3_1
+    linux/amd64:
+      name: community.wave.seqera.io/library/huggingface_hub_python:837d1249362fe322
+      build_id: bd-837d1249362fe322_1
+      scan_id: sc-897b27187fd41f67_1
+  singularity:
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/huggingface_hub_python:38bb36b67660809c
+      build_id: bd-38bb36b67660809c_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/e4/e45e40b8aef5063e3ef4f4615f5dd9c884956fc508222e500f14e35b3882a736/data
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/huggingface_hub_python:a12d76f87f8ce099
+      build_id: bd-a12d76f87f8ce099_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/4d/4d7393e98d9456e1e55d2d19eed365afa849a09fa75b297a58eb275f956957cc/data
+  conda:
+    linux/amd64:
+      lock_file: modules/local/huggingface/download/.conda-lock/linux_amd64-bd-837d1249362fe322_1.txt
+    linux/arm64:
+      lock_file: modules/local/huggingface/download/.conda-lock/linux_arm64-bd-3c261ef70fd9d9d2_1.txt

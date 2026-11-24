@@ -3,6 +3,7 @@ include { LAZYSLIDE_CELLS as LAZYSLIDE_CELLS_CELLPOSE       } from '../../../mod
 include { LAZYSLIDE_CELLS as LAZYSLIDE_CELLS_NULITE         } from '../../../modules/local/lazyslide/cells/main'
 include { LAZYSLIDE_CELLS as LAZYSLIDE_CELLS_HISTOPLUS      } from '../../../modules/local/lazyslide/cells/main'
 include { LAZYSLIDE_TILETISSUES as SEGMENTATION_TILETISSUES } from '../../../modules/local/lazyslide/tiletissues/main'
+include { HUGGINGFACE_DOWNLOAD as HUGGINGFACE_DOWNLOAD_HISTOPLUS } from '../../../modules/local/huggingface/download/main'
 
 workflow SEGMENTATION {
     take:
@@ -62,10 +63,20 @@ workflow SEGMENTATION {
         ch_cells = ch_cells.mix(LAZYSLIDE_CELLS_NULITE.out.cells)
     }
     if ('histoplus' in models) {
-        if (!histoplus_checkpoint) {
-            error('Set --histoplus_checkpoint to the HistoPLUS 20x checkpoint file.')
+        def checkpoint
+        if (histoplus_checkpoint) {
+            checkpoint = file(histoplus_checkpoint, checkIfExists: true)
         }
-        LAZYSLIDE_CELLS_HISTOPLUS(grids.tiles_224, 'histoplus', file(histoplus_checkpoint, checkIfExists: true))
+        else {
+            HUGGINGFACE_DOWNLOAD_HISTOPLUS(
+                'model',
+                'Owkin-Bioptimus/histoplus',
+                'cde2eee81af9e39b03802fc33d4f284733b5ee5e',
+                'histoplus_cellvit_segmentor_20x.pt',
+            )
+            checkpoint = HUGGINGFACE_DOWNLOAD_HISTOPLUS.out.resource
+        }
+        LAZYSLIDE_CELLS_HISTOPLUS(grids.tiles_224, 'histoplus', checkpoint)
         ch_cells = ch_cells.mix(LAZYSLIDE_CELLS_HISTOPLUS.out.cells)
     }
 

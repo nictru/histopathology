@@ -105,7 +105,7 @@
                     "type": "string",
                     "format": "file-path",
                     "exists": true,
-                    "description": "HistoPLUS 20x checkpoint file or URL. Required when histoplus is selected."
+                    "description": "Optional HistoPLUS 20x checkpoint file or URL. When omitted, the pipeline downloads the pinned checkpoint using the HF_TOKEN Nextflow secret."
                 }
             }
         },

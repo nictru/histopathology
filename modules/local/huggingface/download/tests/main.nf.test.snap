@@ -1,0 +1,32 @@
+{
+    "Stage a nested file - stub": {
+        "content": [
+            [
+                "resource.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
+            ],
+            [
+                "versions.yml:md5,8a80554c91d9fca8acb82f023de02f11"
+            ]
+        ],
+        "timestamp": "2026-11-24T12:06:02.156212",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    },
+    "Download a pinned public file without a secret": {
+        "content": [
+            [
+                "config.json:md5,136a73740ec1002d33eff32146678491"
+            ],
+            [
+                "versions.yml:md5,d72a7a694d338765aadabc4265c0fea3"
+            ]
+        ],
+        "timestamp": "2026-11-24T12:05:59.664435",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

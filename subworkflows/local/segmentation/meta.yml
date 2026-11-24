@@ -6,6 +6,7 @@ keywords:
   - nuclei
   - cell segmentation
 components:
+  - huggingface/download
   - lazyslide/cells
   - lazyslide/tiletissues
 input:
@@ -56,7 +57,7 @@ input:
       description: NuLite checkpoint path or URL.
   - histoplus_checkpoint:
       type: string
-      description: HistoPLUS 20x checkpoint path or URL. Required when histoplus is selected.
+      description: Optional HistoPLUS 20x checkpoint path or URL. Defaults to a gated Hugging Face download.
 output:
   - cells:
       type: file
