@@ -7,7 +7,9 @@ from pathlib import Path
 
 import dask
 import numpy as np
+import zarr
 from spatialdata import SpatialData, read_zarr
+from spatialdata._io import write_image
 from squidpy.experimental import im
 
 IMAGE = "wsi"
@@ -42,7 +44,17 @@ with dask.config.set(scheduler="threads", num_workers=int("${task.cpus}")):
         else:
             record["skip_reason"] = "no_tissue"
         attrs = {**slide.attrs, "normalization": {"method": method, **record}}
-        SpatialData(images={IMAGE: image}, attrs=attrs).write(f"{prefix}.normalized.zarr")
+        output = f"{prefix}.normalized.zarr"
+        SpatialData(attrs=attrs).write(output, consolidate_metadata=False)
+        root = zarr.open_group(output, mode="r+")
+        # SpatialData.write() does not expose raster storage options.
+        write_image(
+            image,
+            root.require_group(f"images/{IMAGE}"),
+            IMAGE,
+            storage_options={"chunks": (256, 256), "shards": (2048, 2048)},
+        )
+        zarr.consolidate_metadata(root.store)
 
 versions = {name: version(name) for name in ("squidpy", "spatialdata")}
 Path("versions.yml").write_text(json.dumps({"${task.process}": versions}) + chr(10))

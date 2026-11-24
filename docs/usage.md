@@ -23,7 +23,7 @@ See the [example samplesheet](../assets/samplesheet.csv).
 
 The pipeline reads CZI, TIFF, and JPEG through WSIData's pylibCZI, TiffSlide, and Bio-Formats readers, respectively. It writes a self-contained `<sample>.zarr` to `<OUTDIR>/slides/`. The store contains the RGB image under the `wsi` key. Its attributes record the pixel calibration and the original CZI scene origin when applicable. The pylibCZI reader fills gaps in a CZI scene with black pixels.
 
-Normalization reads the ingested Zarr and writes `<sample>.normalized.zarr` to `<OUTDIR>/normalized_slides/`. Reopen either store with WSIData.
+Normalization reads the ingested Zarr and writes `<sample>.normalized.zarr` to `<OUTDIR>/normalized_slides/`. Reopen either slide store with WSIData. Ingested images, tissue masks, and normalized images use 2048 × 2048 pixel Zarr v3 shards with 256 × 256 pixel chunks. Use a fresh `--outdir` when replacing older, unsharded outputs.
 
 ```python
 from spatialdata import read_zarr

@@ -8,10 +8,12 @@ from pathlib import Path
 import dask
 import dask.array as da
 import numpy as np
+import zarr
 from dask_image.ndinterp import affine_transform
 from lazyslide import open_wsi, pp
 from rasterio.features import rasterize
 from spatialdata import SpatialData, read_zarr
+from spatialdata._io import write_labels
 from spatialdata.models import Image2DModel, Labels2DModel
 from spatialdata.transformations import get_transformation
 from xarray import DataTree
@@ -72,7 +74,11 @@ with dask.config.set(scheduler="threads", num_workers=int("${task.cpus}")):
             "scale1": labels_for_level(mask, levels[-1]).to_dataset(name="image"),
         })
     attrs = {"tissue_detection": {"method": "otsu", "channel": "saturation", "has_tissue": bool(mask.any())}}
-    SpatialData(labels={TISSUE: labels}, attrs=attrs).write("${prefix}.tissue.zarr")
+    output = "${prefix}.tissue.zarr"
+    SpatialData(attrs=attrs).write(output, consolidate_metadata=False)
+    root = zarr.open_group(output, mode="r+")
+    write_labels(labels, root, TISSUE, storage_options={"chunks": (256, 256), "shards": (2048, 2048)})
+    zarr.consolidate_metadata(root.store)
 
 versions = {name: version(name) for name in ("lazyslide", "spatialdata", "wsidata")}
 Path("versions.yml").write_text(json.dumps({"${task.process}": versions}) + chr(10))

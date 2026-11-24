@@ -8,7 +8,9 @@ from importlib.metadata import version
 from pathlib import Path
 
 import dask
+import zarr
 from spatialdata import SpatialData
+from spatialdata._io import write_image
 from spatialdata.models import Image2DModel
 from wsidata import open_wsi
 
@@ -91,8 +93,17 @@ report = {
     "level_shapes_yx": wsi.properties.level_shape,
 }
 wsi.attrs["ingestion"] = report
+output = f"{prefix}.zarr"
 with dask.config.set(scheduler="synchronous"):
-    wsi.write(f"{prefix}.zarr", overwrite=False)
+    SpatialData(attrs=wsi.attrs).write(output, consolidate_metadata=False)
+    root = zarr.open_group(output, mode="r+")
+    write_image(
+        wsi.images["wsi"],
+        root.require_group("images/wsi"),
+        "wsi",
+        storage_options={"chunks": (256, 256), "shards": (2048, 2048)},
+    )
+    zarr.consolidate_metadata(root.store)
 
 versions = {"python": platform.python_version()}
 versions.update({name: version(name) for name in ("wsidata", "spatialdata", reader_package)})

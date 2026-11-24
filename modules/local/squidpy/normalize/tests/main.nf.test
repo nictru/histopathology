@@ -124,6 +124,10 @@ nextflow_process {
             def results = process.out.slide.sort { it[0].id }.collect { meta, slide ->
                 assert path(slide).fileName.toString() == "${meta.id}.normalized.zarr"
                 assert java.nio.file.Files.isDirectory(path(slide).resolve('images/wsi'))
+                def raster = path(path(slide).resolve('images/wsi/s0/zarr.json').toString()).json
+                assert raster.chunk_grid.configuration.chunk_shape == [3, 2048, 2048]
+                def sharding = raster.codecs.find { it.name == 'sharding_indexed' }
+                assert sharding?.configuration?.chunk_shape == [3, 256, 256]
                 def attrs = path(path(slide).resolve('zarr.json').toString()).json.attributes
                 assert attrs.slide_properties.mpp == 0.5
                 def levels = meta.id == 'blank' ? [[180, 240]] : [[270, 300], [135, 150]]

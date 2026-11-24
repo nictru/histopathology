@@ -53,7 +53,10 @@ nextflow_process {
             def (meta, image) = process.out.slide[0]
             assert meta.id == 'czi'
             assert path(image).fileName.toString() == 'czi.zarr'
-            assert java.nio.file.Files.isDirectory(path(image).resolve('images/wsi'))
+            def raster = path(path(image).resolve('images/wsi/s0/zarr.json').toString()).json
+            assert raster.chunk_grid.configuration.chunk_shape == [3, 2048, 2048]
+            def sharding = raster.codecs.find { it.name == 'sharding_indexed' }
+            assert sharding?.configuration?.chunk_shape == [3, 256, 256]
             def result = path(path(image).resolve('zarr.json').toString()).json.attributes.ingestion
             assert result.scene == 0
             assert result.source_origin_xy == [31, -15]
