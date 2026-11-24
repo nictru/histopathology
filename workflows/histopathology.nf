@@ -67,11 +67,11 @@ workflow HISTOPATHOLOGY {
         grandqc_variant,
     )
 
-    STAIN_NORMALIZATION(
-        ch_slides_with_masks,
-        stain_normalization,
-        stain_reference,
-    )
+    def ch_normalized_slides = channel.empty()
+    if (stain_reference) {
+        STAIN_NORMALIZATION(ch_slides_with_masks, stain_normalization, stain_reference)
+        ch_normalized_slides = STAIN_NORMALIZATION.out.slides
+    }
 
     def segmentation_models = (!segmentation_model || segmentation_model == 'none')
         ? []
@@ -83,7 +83,7 @@ workflow HISTOPATHOLOGY {
             error("Unsupported segmentation models: ${unsupported_models.join(', ')}.")
         }
         SEGMENTATION(
-            STAIN_NORMALIZATION.out.slides,
+            stain_reference ? ch_normalized_slides : WSIDATA_INGEST.out.slide,
             ch_slides_with_masks,
             ch_tiles,
             tile_px,
@@ -160,7 +160,7 @@ workflow HISTOPATHOLOGY {
     )
     emit:
     slides            = WSIDATA_INGEST.out.slide                                  // channel: [ val(meta), path(slide) ]
-    normalized_slides = STAIN_NORMALIZATION.out.slides                            // channel: [ val(meta), path(slide) ]
+    normalized_slides = ch_normalized_slides                                     // channel: [ val(meta), path(slide) ]
     tiles             = ch_tiles                                                  // channel: [ val(meta), path(tiles) ]
     tile_qc           = QC.out.tile_qc                                            // channel: [ val(meta), path(scored_tiles) ]
     slide_qc          = QC.out.slide_qc                                           // channel: [ val(meta), path(artifacts) ]

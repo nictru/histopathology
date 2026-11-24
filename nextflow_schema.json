@@ -53,12 +53,12 @@
                     "type": "string",
                     "enum": ["macenko", "reinhard", "vahadane"],
                     "default": "reinhard",
-                    "description": "Method for normalizing the converted whole-slide images."
+                    "description": "Stain normalization method used when a stain reference is supplied."
                 },
                 "stain_reference": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]*$",
-                    "description": "Samplesheet sample ID used to fit the stain reference. Required for all methods."
+                    "description": "Samplesheet sample ID used to fit the stain reference. Omit to skip stain normalization."
                 }
             }
         },
@@ -66,7 +66,7 @@
             "title": "Segmentation options",
             "type": "object",
             "fa_icon": "fas fa-microscope",
-            "description": "Segment nuclei or cells on stain-normalized slides.",
+            "description": "Segment nuclei or cells on ingested or stain-normalized slides.",
             "properties": {
                 "segmentation_model": {
                     "type": "string",

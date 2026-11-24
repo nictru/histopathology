@@ -7,7 +7,7 @@ include { HUGGINGFACE_DOWNLOAD as HUGGINGFACE_DOWNLOAD_HISTOPLUS } from '../../.
 
 workflow SEGMENTATION {
     take:
-    ch_normalized_slides // channel: [ val(meta), path(slide) ]
+    ch_slides            // channel: [ val(meta), path(slide) ]
     ch_slides_with_masks // channel: [ val(meta), path(slide), path(tissue_mask) ]
     ch_tiles             // channel: [ val(meta), path(tiles) ]
     tile_px              // value: regular tile width in pixels
@@ -39,7 +39,7 @@ workflow SEGMENTATION {
         ch_segmentation_tiles = ch_segmentation_tiles.mix(SEGMENTATION_TILETISSUES.out.tiles)
     }
 
-    def grids = ch_normalized_slides.combine(ch_segmentation_tiles, by: 0)
+    def grids = ch_slides.combine(ch_segmentation_tiles, by: 0)
         .branch { meta, slide, tiles, pixels ->
             tiles_512: pixels == 512
                 return [meta, slide, tiles]

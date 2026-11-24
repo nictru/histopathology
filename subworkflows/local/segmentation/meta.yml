@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
 name: segmentation
-description: Segment nuclei or cells on stain-normalized slides using LazySlide.
+description: Segment nuclei or cells on ingested or stain-normalized slides using LazySlide.
 keywords:
   - histology
   - nuclei
@@ -10,12 +10,12 @@ components:
   - lazyslide/cells
   - lazyslide/tiletissues
 input:
-  - ch_normalized_slides:
+  - ch_slides:
       type: file
       description: |
-        Stain-normalized WSIData stores.
+        Ingested or stain-normalized WSIData stores.
         Structure: [ val(meta), path(slide) ]
-      pattern: "*.normalized.zarr"
+      pattern: "*.zarr"
   - ch_slides_with_masks:
       type: file
       description: |

@@ -35,7 +35,7 @@ workflow PIPELINE_INITIALISATION {
     help               // boolean: Display help message and exit
     help_full          // boolean: Show the full help message
     show_hidden        // boolean: Show hidden parameters in the help message
-    stain_reference    //  string: Sample ID used to fit the stain reference
+    stain_reference    //  string: Optional sample ID used to fit the stain reference
     segmentation_model // string: Selected segmentation models, or 'none'
     segmentation_mpp   //  number: Segmentation tile resolution in microns per pixel
 
@@ -80,7 +80,7 @@ workflow PIPELINE_INITIALISATION {
         before_text = before_text.replaceAll(/\033\[[0-9;]*m/, '')
     }
 
-    command = "nextflow run ${workflow.manifest.name} -profile <docker/singularity/.../institute> --input samplesheet.csv --stain_reference <SAMPLE_ID> --outdir <OUTDIR>"
+    command = "nextflow run ${workflow.manifest.name} -profile <docker/singularity/.../institute> --input samplesheet.csv --outdir <OUTDIR>"
 
     UTILS_NFSCHEMA_PLUGIN (
         workflow,
@@ -112,10 +112,7 @@ workflow PIPELINE_INITIALISATION {
     if (duplicate) {
         error("Duplicate sample ID in the slide samplesheet: ${duplicate.key}")
     }
-    if (!stain_reference) {
-        error('Set --stain_reference to a sample ID from the samplesheet.')
-    }
-    if (!sample_counts.containsKey(stain_reference)) {
+    if (stain_reference && !sample_counts.containsKey(stain_reference)) {
         error("Reference sample '${stain_reference}' was not found in the samplesheet. Check --stain_reference.")
     }
     if (segmentation_model && segmentation_model != 'none') {

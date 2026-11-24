@@ -23,7 +23,7 @@ See the [example samplesheet](../assets/samplesheet.csv).
 
 The pipeline uses WSIData to read CZI with pylibCZI, TIFF and SVS with TiffSlide, and JPEG with Bio-Formats. It writes a self-contained `<sample>.zarr` to `<OUTDIR>/slides/`. The store contains the RGB image under the `wsi` key. Its attributes record the pixel calibration and the original CZI scene origin when applicable. The pylibCZI reader fills gaps in a CZI scene with black pixels.
 
-Normalization reads the ingested Zarr and writes `<sample>.normalized.zarr` to `<OUTDIR>/normalized_slides/`. Reopen either slide store with WSIData. Ingested images, tissue masks, and normalized images use 2048 × 2048 pixel Zarr v3 shards with 256 × 256 pixel chunks. Use a fresh `--outdir` when replacing older, unsharded outputs.
+When enabled, normalization reads the ingested Zarr and writes `<sample>.normalized.zarr` to `<OUTDIR>/normalized_slides/`. Reopen either slide store with WSIData. Ingested images, tissue masks, and normalized images use 2048 × 2048 pixel Zarr v3 shards with 256 × 256 pixel chunks. Use a fresh `--outdir` when replacing older, unsharded outputs.
 
 ```python
 from spatialdata import read_zarr
@@ -34,9 +34,9 @@ wsi = open_wsi(read_zarr("sample.normalized.zarr"), image_key="wsi")
 
 ## Stain normalization
 
-Reinhard is the default. Set `--stain_normalization macenko` or `--stain_normalization vahadane` to select another method. Pass an existing `sample` value with `--stain_reference` for any method.
+To enable stain normalization, set `--stain_reference` to a sample ID from the samplesheet. Omit it to skip normalization. Reinhard is the default method. Set `--stain_normalization macenko` or `--stain_normalization vahadane` to use another method.
 
-Before normalization, LazySlide detects tissue once per slide using Otsu thresholding on color saturation. The pipeline writes a binary `wsi_tissue` label to `<OUTDIR>/tissue_masks/<sample>.tissue.zarr` at the resolutions used for stain fitting and transformation.
+LazySlide detects tissue once per slide using Otsu thresholding on color saturation. The pipeline writes a binary `wsi_tissue` label to `<OUTDIR>/tissue_masks/<sample>.tissue.zarr` for tiling and optional stain normalization.
 
 The pipeline fits the selected reference slide once and uses it to normalize every slide in the samplesheet, including the reference itself. Squidpy uses the precomputed masks to estimate stain statistics from tissue and preserve the background. Each normalized Zarr records the method, reference sample, and fitted statistics in its attributes. Slides with no detected tissue retain their original pixels.
 
@@ -56,7 +56,7 @@ The pipeline infers the GrandQC variant from the official checkpoint filename. T
 
 ## Nucleus and cell segmentation
 
-Set `--segmentation_model instanseg` to segment nuclei on stain-normalized slides. Use a comma-separated list such as `--segmentation_model instanseg,nulite` to run several methods on each slide. The default is `none`.
+Set `--segmentation_model instanseg` to segment nuclei. Segmentation uses the normalized slides when you supply a stain reference and the ingested slides when you omit it. Use a comma-separated list such as `--segmentation_model instanseg,nulite` to run several methods on each slide. The default is `none`.
 
 | Model | Instance polygons | Tile size | Checkpoint parameter |
 | --- | --- | --- | --- |
