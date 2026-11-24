@@ -23,13 +23,13 @@ input:
         type: directory
         description: SpatialData store with tile and tissue shapes and the tile specification.
         pattern: "*.tiles.zarr"
-  - model:
-      type: string
-      description: Pretrained tile encoder.
-      enum: [resnet50, uni, uni2, gigapath-flash]
-  - checkpoint:
-      type: file
-      description: Staged weights for the selected encoder.
+    - model:
+        type: string
+        description: Pretrained tile encoder.
+        enum: [resnet50, uni, uni2, gigapath-flash]
+    - checkpoint:
+        type: file
+        description: Staged weights for the selected encoder.
   - batch_size:
       type: integer
       description: Number of tiles per inference batch.

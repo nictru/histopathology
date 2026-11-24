@@ -68,13 +68,14 @@ workflow SEGMENTATION {
             checkpoint = file(histoplus_checkpoint, checkIfExists: true)
         }
         else {
-            HUGGINGFACE_DOWNLOAD_HISTOPLUS(
+            HUGGINGFACE_DOWNLOAD_HISTOPLUS(channel.value([
+                [id: 'histoplus'],
                 'model',
                 'Owkin-Bioptimus/histoplus',
                 'cde2eee81af9e39b03802fc33d4f284733b5ee5e',
                 'histoplus_cellvit_segmentor_20x.pt',
-            )
-            checkpoint = HUGGINGFACE_DOWNLOAD_HISTOPLUS.out.resource
+            ]))
+            checkpoint = HUGGINGFACE_DOWNLOAD_HISTOPLUS.out.resource.map { _meta, resource -> resource }
         }
         LAZYSLIDE_CELLS_HISTOPLUS(grids.tiles_224, 'histoplus', checkpoint)
         ch_cells = ch_cells.mix(LAZYSLIDE_CELLS_HISTOPLUS.out.cells)

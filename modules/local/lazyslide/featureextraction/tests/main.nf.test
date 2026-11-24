@@ -54,10 +54,11 @@ nextflow_process {
             process {
                 """
                 def tiles = LAZYSLIDE_TILETISSUES.out.tiles.map { meta, store, _pixels -> [meta, store] }
-                input[0] = WSIDATA_INGEST.out.slide.join(tiles)
-                input[1] = 'resnet50'
-                input[2] = file('https://huggingface.co/timm/resnet50.a1_in1k/resolve/767268603ca0cb0bfe326fa87277f19c419566ef/model.safetensors', checkIfExists: true)
-                input[3] = 8
+                def checkpoint = file('https://huggingface.co/timm/resnet50.a1_in1k/resolve/767268603ca0cb0bfe326fa87277f19c419566ef/model.safetensors', checkIfExists: true)
+                input[0] = WSIDATA_INGEST.out.slide.join(tiles).map { meta, slide, grid ->
+                    [meta, slide, grid, 'resnet50', checkpoint]
+                }
+                input[1] = 8
                 """
             }
         }

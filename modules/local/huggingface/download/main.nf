@@ -8,13 +8,10 @@ process HUGGINGFACE_DOWNLOAD {
         : 'community.wave.seqera.io/library/huggingface_hub_python:837d1249362fe322'}"
 
     input:
-    val repo_type
-    val repo_id
-    val revision
-    val filename
+    tuple val(meta), val(repo_type), val(repo_id), val(revision), val(filename)
 
     output:
-    path "download/${filename}", arity: '1', emit: resource
+    tuple val(meta), path("download/${filename}", arity: '1'), emit: resource
     path "versions.yml", emit: versions_huggingface_hub, topic: versions
 
     when:

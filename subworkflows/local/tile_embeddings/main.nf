@@ -1,11 +1,6 @@
-include { LAZYSLIDE_FEATUREEXTRACTION as LAZYSLIDE_FEATUREEXTRACTION_RESNET50       } from '../../../modules/local/lazyslide/featureextraction/main'
-include { LAZYSLIDE_FEATUREEXTRACTION as LAZYSLIDE_FEATUREEXTRACTION_UNI            } from '../../../modules/local/lazyslide/featureextraction/main'
-include { LAZYSLIDE_FEATUREEXTRACTION as LAZYSLIDE_FEATUREEXTRACTION_UNI2           } from '../../../modules/local/lazyslide/featureextraction/main'
-include { LAZYSLIDE_FEATUREEXTRACTION as LAZYSLIDE_FEATUREEXTRACTION_GIGAPATH_FLASH } from '../../../modules/local/lazyslide/featureextraction/main'
-include { LAZYSLIDE_TILETISSUES as EMBEDDING_TILETISSUES                            } from '../../../modules/local/lazyslide/tiletissues/main'
-include { HUGGINGFACE_DOWNLOAD as HUGGINGFACE_DOWNLOAD_UNI                          } from '../../../modules/local/huggingface/download/main'
-include { HUGGINGFACE_DOWNLOAD as HUGGINGFACE_DOWNLOAD_UNI2                         } from '../../../modules/local/huggingface/download/main'
-include { HUGGINGFACE_DOWNLOAD as HUGGINGFACE_DOWNLOAD_GIGAPATH_FLASH               } from '../../../modules/local/huggingface/download/main'
+include { LAZYSLIDE_FEATUREEXTRACTION                             } from '../../../modules/local/lazyslide/featureextraction/main'
+include { LAZYSLIDE_TILETISSUES as EMBEDDING_TILETISSUES          } from '../../../modules/local/lazyslide/tiletissues/main'
+include { HUGGINGFACE_DOWNLOAD as HUGGINGFACE_DOWNLOAD_EMBEDDINGS } from '../../../modules/local/huggingface/download/main'
 
 workflow TILE_EMBEDDINGS {
     take:
@@ -33,49 +28,26 @@ workflow TILE_EMBEDDINGS {
         ch_embedding_tiles = EMBEDDING_TILETISSUES.out.tiles.map { meta, tiles, _pixels -> [meta, tiles] }
     }
 
-    def ch_inputs = ch_slides.join(ch_embedding_tiles)
-    def ch_embeddings = channel.empty()
-    if ('resnet50' in models) {
-        LAZYSLIDE_FEATUREEXTRACTION_RESNET50(ch_inputs, 'resnet50', file(resnet50_checkpoint, checkIfExists: true), batch_size)
-        ch_embeddings = ch_embeddings.mix(LAZYSLIDE_FEATUREEXTRACTION_RESNET50.out.embeddings)
-    }
-    if ('uni' in models) {
-        def checkpoint
-        if (uni_checkpoint) {
-            checkpoint = file(uni_checkpoint, checkIfExists: true)
+    def sources = [
+        resnet50: [checkpoint: resnet50_checkpoint],
+        uni: [checkpoint: uni_checkpoint, repository: 'MahmoodLab/UNI', revision: 'b55a5ec6cade1a39edfe6534189a9b8ca7a022f0'],
+        uni2: [checkpoint: uni2_checkpoint, repository: 'MahmoodLab/UNI2-h', revision: 'd517a8dd47902dd7c308b3c36f63bce47e7b9a43'],
+        'gigapath-flash': [checkpoint: gigapath_flash_checkpoint, repository: 'prov-gigapath/prov-gigapath-flash', revision: '685a3c816fb7bfd4fec697d7f1ed7da57f2e8e86'],
+    ]
+    def requests = channel.fromList(sources.keySet().findAll { model -> model in models })
+        .map { model -> tuple(model, sources[model]) }
+        .branch { model, source ->
+            provided: source.checkpoint || !source.repository
+            return tuple(model, file(source.checkpoint, checkIfExists: true))
+            download: true
+            return tuple([id: model], 'model', source.repository, source.revision, 'pytorch_model.bin')
         }
-        else {
-            HUGGINGFACE_DOWNLOAD_UNI('model', 'MahmoodLab/UNI', 'b55a5ec6cade1a39edfe6534189a9b8ca7a022f0', 'pytorch_model.bin')
-            checkpoint = HUGGINGFACE_DOWNLOAD_UNI.out.resource
-        }
-        LAZYSLIDE_FEATUREEXTRACTION_UNI(ch_inputs, 'uni', checkpoint, batch_size)
-        ch_embeddings = ch_embeddings.mix(LAZYSLIDE_FEATUREEXTRACTION_UNI.out.embeddings)
-    }
-    if ('uni2' in models) {
-        def checkpoint
-        if (uni2_checkpoint) {
-            checkpoint = file(uni2_checkpoint, checkIfExists: true)
-        }
-        else {
-            HUGGINGFACE_DOWNLOAD_UNI2('model', 'MahmoodLab/UNI2-h', 'd517a8dd47902dd7c308b3c36f63bce47e7b9a43', 'pytorch_model.bin')
-            checkpoint = HUGGINGFACE_DOWNLOAD_UNI2.out.resource
-        }
-        LAZYSLIDE_FEATUREEXTRACTION_UNI2(ch_inputs, 'uni2', checkpoint, batch_size)
-        ch_embeddings = ch_embeddings.mix(LAZYSLIDE_FEATUREEXTRACTION_UNI2.out.embeddings)
-    }
-    if ('gigapath-flash' in models) {
-        def checkpoint
-        if (gigapath_flash_checkpoint) {
-            checkpoint = file(gigapath_flash_checkpoint, checkIfExists: true)
-        }
-        else {
-            HUGGINGFACE_DOWNLOAD_GIGAPATH_FLASH('model', 'prov-gigapath/prov-gigapath-flash', '685a3c816fb7bfd4fec697d7f1ed7da57f2e8e86', 'pytorch_model.bin')
-            checkpoint = HUGGINGFACE_DOWNLOAD_GIGAPATH_FLASH.out.resource
-        }
-        LAZYSLIDE_FEATUREEXTRACTION_GIGAPATH_FLASH(ch_inputs, 'gigapath-flash', checkpoint, batch_size)
-        ch_embeddings = ch_embeddings.mix(LAZYSLIDE_FEATUREEXTRACTION_GIGAPATH_FLASH.out.embeddings)
-    }
+
+    HUGGINGFACE_DOWNLOAD_EMBEDDINGS(requests.download)
+    def ch_downloaded = HUGGINGFACE_DOWNLOAD_EMBEDDINGS.out.resource.map { meta, checkpoint -> tuple(meta.id, checkpoint) }
+    def ch_checkpoints = requests.provided.mix(ch_downloaded)
+    LAZYSLIDE_FEATUREEXTRACTION(ch_slides.join(ch_embedding_tiles).combine(ch_checkpoints), batch_size)
 
     emit:
-    embeddings = ch_embeddings // channel: [ val(meta), path(embedding_store) ]
+    embeddings = LAZYSLIDE_FEATUREEXTRACTION.out.embeddings // channel: [ val(meta), path(embedding_store) ]
 }

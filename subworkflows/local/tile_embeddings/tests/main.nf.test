@@ -30,7 +30,7 @@ nextflow_workflow {
                 input[4] = 0.5
                 input[5] = 0
                 input[6] = 0.3
-                input[7] = ['resnet50', 'uni']
+                input[7] = ['resnet50', 'uni', 'uni2']
                 input[8] = 8
                 input[9] = checkpoint
                 input[10] = null
@@ -42,6 +42,10 @@ nextflow_workflow {
 
         then {
             assert workflow.success
+            def tasks = workflow.trace.tasks().collect { it.name.tokenize(':').last().tokenize(' ').first() }
+            assert tasks.count('HUGGINGFACE_DOWNLOAD_EMBEDDINGS') == 2
+            assert tasks.count('LAZYSLIDE_FEATUREEXTRACTION') == 6
+            assert tasks.size() == 8
             def stores = workflow.out.embeddings.collect { meta, store ->
                 assert path(store).fileName.toString().startsWith(meta.id + '.')
                 path(store).fileName.toString()
@@ -49,8 +53,10 @@ nextflow_workflow {
             assert stores == [
                 'slide-a.resnet50.embeddings.zarr',
                 'slide-a.uni.embeddings.zarr',
+                'slide-a.uni2.embeddings.zarr',
                 'slide-b.resnet50.embeddings.zarr',
                 'slide-b.uni.embeddings.zarr',
+                'slide-b.uni2.embeddings.zarr',
             ]
             assert snapshot(stores).match()
         }

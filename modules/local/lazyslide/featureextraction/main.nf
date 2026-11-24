@@ -27,9 +27,7 @@ process LAZYSLIDE_FEATUREEXTRACTION {
     }
 
     input:
-    tuple val(meta), path(slide, stageAs: 'source.zarr'), path(tiles, stageAs: 'tiles.zarr')
-    val model
-    path checkpoint, stageAs: 'checkpoint/*', arity: '1'
+    tuple val(meta), path(slide, stageAs: 'source.zarr'), path(tiles, stageAs: 'tiles.zarr'), val(model), path(checkpoint, stageAs: 'checkpoint/*', arity: '1')
     val batch_size
 
     output:

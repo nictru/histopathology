@@ -4,11 +4,13 @@
             [
                 "slide-a.resnet50.embeddings.zarr",
                 "slide-a.uni.embeddings.zarr",
+                "slide-a.uni2.embeddings.zarr",
                 "slide-b.resnet50.embeddings.zarr",
-                "slide-b.uni.embeddings.zarr"
+                "slide-b.uni.embeddings.zarr",
+                "slide-b.uni2.embeddings.zarr"
             ]
         ],
-        "timestamp": "2026-11-24T17:12:00.306969",
+        "timestamp": "2026-11-24T17:24:11.548447",
         "meta": {
             "nf-test": "0.9.4",
             "nextflow": "26.10.7"

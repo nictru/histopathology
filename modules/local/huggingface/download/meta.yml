@@ -13,23 +13,29 @@ tools:
       tool_dev_url: https://github.com/huggingface/huggingface_hub
       licence: ["Apache-2.0"]
 input:
-  - repo_type:
-      type: string
-      description: Hugging Face repository type (model, dataset, or space).
-  - repo_id:
-      type: string
-      description: Hugging Face repository ID, typically in owner/name form.
-  - revision:
-      type: string
-      description: Full 40-character commit hash for the revision to download.
-  - filename:
-      type: string
-      description: Path to the file within the repository.
+  - - meta:
+        type: map
+        description: Metadata identifying the requested resource.
+    - repo_type:
+        type: string
+        description: Hugging Face repository type (model, dataset, or space).
+    - repo_id:
+        type: string
+        description: Hugging Face repository ID, typically in owner/name form.
+    - revision:
+        type: string
+        description: Full 40-character commit hash for the revision to download.
+    - filename:
+        type: string
+        description: Path to the file within the repository.
 output:
   resource:
-    - "download/${filename}":
-        type: file
-        description: The downloaded file.
+    - - meta:
+          type: map
+          description: Metadata identifying the requested resource.
+      - "download/${filename}":
+          type: file
+          description: The downloaded file.
   versions_huggingface_hub:
     - versions.yml:
         type: file
