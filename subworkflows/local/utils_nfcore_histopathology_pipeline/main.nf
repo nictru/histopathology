@@ -35,6 +35,7 @@ workflow PIPELINE_INITIALISATION {
     help               // boolean: Display help message and exit
     help_full          // boolean: Show the full help message
     show_hidden        // boolean: Show hidden parameters in the help message
+    stain_reference    //  string: Sample ID used to fit the stain reference
     segmentation_model // string: Selected segmentation models, or 'none'
     segmentation_mpp   //  number: Segmentation tile resolution in microns per pixel
 
@@ -106,9 +107,16 @@ workflow PIPELINE_INITIALISATION {
     //
 
     def slides = samplesheetToList(input, "${projectDir}/assets/schema_input.json")
-    def duplicate = slides.countBy { row -> row[0].id }.find { _id, count -> count > 1 }
+    def sample_counts = slides.countBy { row -> row[0].id }
+    def duplicate = sample_counts.find { _id, count -> count > 1 }
     if (duplicate) {
         error("Duplicate sample ID in the slide samplesheet: ${duplicate.key}")
+    }
+    if (!stain_reference) {
+        error('Set --stain_reference to a sample ID from the samplesheet.')
+    }
+    if (!sample_counts.containsKey(stain_reference)) {
+        error("Reference sample '${stain_reference}' was not found in the samplesheet. Check --stain_reference.")
     }
     if (segmentation_model && segmentation_model != 'none') {
         def target_mpp = segmentation_mpp.toString().toBigDecimal()

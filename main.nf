@@ -91,6 +91,7 @@ workflow {
         params.help,
         params.help_full,
         params.show_hidden,
+        params.stain_reference?.toString(),
         params.segmentation_model,
         params.segmentation_mpp,
     )

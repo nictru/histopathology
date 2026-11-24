@@ -13,7 +13,7 @@ workflow STAIN_NORMALIZATION {
     }
     def ch_reference_slide = ch_slides
         .filter { meta, _slide, _tissue_mask -> meta.id == reference_id }
-        .ifEmpty { error("Reference sample '${reference_id}' was not found in the samplesheet.") }
+        .ifEmpty { error("Reference sample '${reference_id}' did not produce an ingested slide and tissue mask.") }
         .first()
 
     SQUIDPY_NORMALIZE_FIT(ch_reference_slide, [], method, true)
