@@ -1,0 +1,21 @@
+{
+    "Segment nuclei on H&E and emit an empty result for a blank slide": {
+        "content": [
+            [
+                [
+                    "blank",
+                    "blank.instanseg.cells.zarr"
+                ],
+                [
+                    "tissue",
+                    "tissue.instanseg.cells.zarr"
+                ]
+            ]
+        ],
+        "timestamp": "2026-11-23T22:48:57.733171",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.7"
+        }
+    }
+}

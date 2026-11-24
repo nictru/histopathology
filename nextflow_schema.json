@@ -62,6 +62,47 @@
                 }
             }
         },
+        "segmentation_options": {
+            "title": "Segmentation options",
+            "type": "object",
+            "fa_icon": "fas fa-microscope",
+            "description": "Segment nuclei or cells on stain-normalized slides.",
+            "properties": {
+                "segmentation_model": {
+                    "type": "string",
+                    "default": "none",
+                    "pattern": "^(none|(instanseg|cellpose|nulite|histoplus)(, *(instanseg|cellpose|nulite|histoplus))*)$",
+                    "description": "Comma-separated models for instance segmentation: instanseg, cellpose, nulite, or histoplus. Use none to skip segmentation."
+                },
+                "instanseg_checkpoint": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "default": "https://huggingface.co/RendeiroLab/LazySlide-models/resolve/4d4b7bb3195870d2869fd9d9bd77c65235145819/instanseg/instanseg_v0_1_0.pt",
+                    "description": "InstanSeg checkpoint file or URL."
+                },
+                "cellpose_checkpoint": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "default": "https://huggingface.co/mouseland/cellpose-sam/resolve/7c61431b5fbb078f3296754bd15d9f51b320f837/cpsam_v2",
+                    "description": "Cellpose checkpoint file or URL."
+                },
+                "nulite_checkpoint": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "default": "https://huggingface.co/RendeiroLab/LazySlide-models/resolve/4d4b7bb3195870d2869fd9d9bd77c65235145819/NuLite/NuLite_H_exported.pt2",
+                    "description": "NuLite checkpoint file or URL."
+                },
+                "histoplus_checkpoint": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "description": "HistoPLUS 20x checkpoint file or URL. Required when histoplus is selected."
+                }
+            }
+        },
         "tiling_qc_options": {
             "title": "Tiling and quality control",
             "type": "object",
@@ -281,6 +322,9 @@
         },
         {
             "$ref": "#/$defs/stain_normalization_options"
+        },
+        {
+            "$ref": "#/$defs/segmentation_options"
         },
         {
             "$ref": "#/$defs/tiling_qc_options"

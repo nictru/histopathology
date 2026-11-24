@@ -41,6 +41,7 @@ if "tiles" in slide.shapes:
     tiles = tiles.loc[tiles.geometry.covered_by(box(0, 0, width, height))].reset_index(drop=True)
     if len(tiles):
         shapes["tiles"] = tiles
+        shapes["tissues"] = slide.shapes["tissues"]
 attrs = {"tile_spec": slide.attrs["tile_spec"] if shapes else {}}
 SpatialData(shapes=shapes, attrs=attrs).write("${prefix}.tiles.zarr")
 

@@ -40,7 +40,8 @@ workflow QC {
 
     def grandqc_mpp = ['5x': 2, '7x': 1.5, '10x': 1][resolved_grandqc_variant]
     GRANDQC_TILETISSUES(ch_slides_with_masks, 512, grandqc_mpp, 0.5, 1)
-    LAZYSLIDE_GRANDQC(ch_slides.join(GRANDQC_TILETISSUES.out.tiles), grandqc_checkpoint_file, resolved_grandqc_variant)
+    def ch_grandqc_tiles = GRANDQC_TILETISSUES.out.tiles.map { meta, tiles, _pixels -> [meta, tiles] }
+    LAZYSLIDE_GRANDQC(ch_slides.join(ch_grandqc_tiles), grandqc_checkpoint_file, resolved_grandqc_variant)
 
     emit:
     tile_qc  = ch_tile_qc                      // channel: [ val(meta), path(scored_tiles) ]

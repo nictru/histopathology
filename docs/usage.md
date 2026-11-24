@@ -54,6 +54,27 @@ The pipeline measures brightness, contrast, sharpness, and saturation on the ori
 
 The pipeline infers the GrandQC variant from the official checkpoint filename. The default checkpoint is for `7x`. To use `5x` or `10x`, supply the corresponding file or URL with `--grandqc_checkpoint`. Set `--grandqc_variant` if your checkpoint has a different filename. The pipeline makes a separate overlapping 512 × 512 grid at 2 MPP for `5x`, 1.5 MPP for `7x`, or 1 MPP for `10x`.
 
+## Nucleus and cell segmentation
+
+Set `--segmentation_model instanseg` to segment nuclei on stain-normalized slides. Use a comma-separated list such as `--segmentation_model instanseg,nulite` to run several methods on each slide. The default is `none`.
+
+| Model | Instance polygons | Tile size | Checkpoint parameter |
+| --- | --- | --- | --- |
+| `instanseg` | Nuclei | 512 × 512 px | `--instanseg_checkpoint` |
+| `cellpose` | Objects detected by the Cellpose checkpoint | 256 × 256 px | `--cellpose_checkpoint` |
+| `nulite` | Nuclei with cell-type labels | 256 × 256 px | `--nulite_checkpoint` |
+| `histoplus` | Nuclei with cell-type labels | 224 × 224 px | `--histoplus_checkpoint` |
+
+Segmentation uses tiles at 0.5 µm/px with 12.5% overlap. Supply calibrated slides scanned at 0.5 µm/px or finer. Selected models with the same tile size share a grid. The pipeline reuses the regular grid if its size, MPP, and overlap match the model settings. For example, `--tile_px 512 --tile_mpp 0.5 --tile_overlap 0.125` shares the grid between InstanSeg and tile QC.
+
+InstanSeg, Cellpose, and NuLite use pinned public weights by default. Use the corresponding checkpoint parameter to supply a compatible file or URL. To run HistoPLUS, pass an authorized copy of `histoplus_cellvit_segmentor_20x.pt` to `--histoplus_checkpoint`.
+
+Find results in `<OUTDIR>/segmentation/<sample>.<model>.cells.zarr`. The `nuclei` or `cells` shapes are in the slide coordinate system. Each store records the model, checkpoint filename, device, tile specification, and instance count. A slide with zero detections has an instance count of zero and no shapes layer.
+
+### GPU acceleration
+
+Add the `gpu` profile to your container profile, for example `-profile docker,gpu`. The segmentation process requests one NVIDIA GPU and uses the CUDA 13.0 environment. Use a compatible NVIDIA driver on the execution host. On AWS Batch, configure a GPU-capable queue for processes with the `process_gpu` label.
+
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:

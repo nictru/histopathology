@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: segmentation
+description: Segment nuclei or cells on stain-normalized slides using LazySlide.
+keywords:
+  - histology
+  - nuclei
+  - cell segmentation
+components:
+  - lazyslide/cells
+  - lazyslide/tiletissues
+input:
+  - ch_normalized_slides:
+      type: file
+      description: |
+        Stain-normalized WSIData stores.
+        Structure: [ val(meta), path(slide) ]
+      pattern: "*.normalized.zarr"
+  - ch_slides_with_masks:
+      type: file
+      description: |
+        Ingested slides with aligned tissue masks for building segmentation grids.
+        Structure: [ val(meta), path(slide), path(tissue_mask) ]
+      pattern: "*.zarr"
+  - ch_tiles:
+      type: file
+      description: |
+        Regular tile grids. Reused when the grid matches the model settings.
+        Structure: [ val(meta), path(tiles) ]
+      pattern: "*.tiles.zarr"
+  - tile_px:
+      type: integer
+      description: Regular tile width in pixels.
+  - tile_mpp:
+      type: float
+      description: Regular tile resolution in microns per pixel.
+  - tile_overlap:
+      type: float
+      description: Regular tile overlap fraction.
+  - background_fraction:
+      type: float
+      description: Maximum fraction of a tile that may fall outside tissue.
+  - models:
+      type: list
+      description: Selected segmentation model names.
+  - instanseg_checkpoint:
+      type: string
+      description: InstanSeg checkpoint path or URL.
+  - cellpose_checkpoint:
+      type: string
+      description: Cellpose checkpoint path or URL.
+  - nulite_checkpoint:
+      type: string
+      description: NuLite checkpoint path or URL.
+  - histoplus_checkpoint:
+      type: string
+      description: HistoPLUS 20x checkpoint path or URL. Required when histoplus is selected.
+output:
+  - cells:
+      type: file
+      description: |
+        SpatialData stores with segmentation polygons and provenance.
+        Structure: [ val(meta), path(instances) ]
+      pattern: "*.cells.zarr"
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"

@@ -1,5 +1,5 @@
 process LAZYSLIDE_TILETISSUES {
-    tag "${meta.id}"
+    tag "${meta.id} (${tile_px} px)"
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
@@ -9,13 +9,13 @@ process LAZYSLIDE_TILETISSUES {
 
     input:
     tuple val(meta), path(slide, stageAs: 'source.zarr'), path(tissue_mask, stageAs: 'tissue.zarr')
-    val tile_px
+    each tile_px
     val mpp
     val overlap
     val background_fraction
 
     output:
-    tuple val(meta), path("${prefix}.tiles.zarr"), emit: tiles
+    tuple val(meta), path("${prefix}.tiles.zarr"), val(tile_px), emit: tiles
     path "versions.yml", emit: versions, topic: versions
 
     when:

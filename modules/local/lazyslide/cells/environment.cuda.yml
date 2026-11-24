@@ -1,0 +1,21 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/environment-schema.json
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - conda-forge::pip=26.0.1
+  - conda-forge::python=3.13.13
+  - pip:
+    - cellpose==4.2.1.1
+    - dask==2026.11.0
+    - dask-image==2026.5.0
+    - lazyslide==0.13.0
+    - lazyslide-models==0.1.0
+    - spatialdata==0.9.0
+    - timm==1.0.31
+    - torch==2.14.1+cu130
+    - torchvision==0.29.1+cu130
+    - wsidata==0.12.0
+    - xarray==2026.9.0
+    - --extra-index-url https://download.pytorch.org/whl/cu130

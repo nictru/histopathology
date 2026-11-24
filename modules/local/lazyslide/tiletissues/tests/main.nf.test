@@ -57,7 +57,8 @@ nextflow_process {
 
         then {
             assert process.success
-            def results = process.out.tiles.sort { it[0].id }.collect { meta, store ->
+            def results = process.out.tiles.sort { it[0].id }.collect { meta, store, pixels ->
+                assert pixels == 64
                 def attrs = path(path(store).resolve('zarr.json').toString()).json.attributes
                 def shapes = java.nio.file.Files.isDirectory(path(store).resolve('shapes/tiles'))
                 [meta.id, shapes, attrs.tile_spec.tiles?.mpp]

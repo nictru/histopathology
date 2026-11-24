@@ -1,0 +1,32 @@
+{
+    "Segmentation grid selection - retile": {
+        "content": [
+            [
+                [
+                    "sample",
+                    "sample.instanseg.cells.zarr"
+                ]
+            ]
+        ],
+        "timestamp": "2026-11-23T22:47:52.510961",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.7"
+        }
+    },
+    "Segmentation grid selection - reuse": {
+        "content": [
+            [
+                [
+                    "sample",
+                    "sample.instanseg.cells.zarr"
+                ]
+            ]
+        ],
+        "timestamp": "2026-11-23T22:47:48.207032",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.7"
+        }
+    }
+}

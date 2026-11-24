@@ -60,7 +60,8 @@ nextflow_process {
         when {
             process {
                 """
-                input[0] = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_TILETISSUES.out.tiles)
+                def tiles = LAZYSLIDE_TILETISSUES.out.tiles.map { meta, store, _pixels -> [meta, store] }
+                input[0] = WSIDATA_INGEST.out.slide.join(tiles)
                 input[1] = 'tileqc'
                 input[2] = []
                 """

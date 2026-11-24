@@ -1,0 +1,79 @@
+nextflow_process {
+    name "Test LAZYSLIDE_CELLS"
+    script "../main.nf"
+    process "LAZYSLIDE_CELLS"
+
+    tag "modules"
+    tag "modules_local"
+    tag "lazyslide/cells"
+    tag "lazyslide/tiletissues"
+    tag "lazyslide/findtissues"
+    tag "wsidata/ingest"
+
+    test("Segment nuclei on H&E and emit an empty result for a blank slide") {
+        setup {
+            run("WSIDATA_INGEST") {
+                script "../../../wsidata/ingest/main.nf"
+                process {
+                    """
+                    def tissue = file('https://raw.githubusercontent.com/instanseg/instanseg/414fbc9e8039c1d049cc27871d66409084ded21c/instanseg/examples/HE_example.tif', checkIfExists: true)
+                    def blank = java.nio.file.Files.createTempFile('blank-slide', '.tif')
+                    def image = new java.awt.image.BufferedImage(512, 512, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                    def graphics = image.createGraphics()
+                    graphics.setColor(java.awt.Color.WHITE)
+                    graphics.fillRect(0, 0, image.width, image.height)
+                    graphics.dispose()
+                    assert javax.imageio.ImageIO.write(image, 'tiff', blank.toFile())
+                    input[0] = channel.of([[id: 'tissue'], tissue, [], 0.5], [[id: 'blank'], blank, [], 0.5])
+                    """
+                }
+            }
+            run("LAZYSLIDE_FINDTISSUES") {
+                script "../../findtissues/main.nf"
+                process {
+                    """
+                    input[0] = WSIDATA_INGEST.out.slide
+                    """
+                }
+            }
+            run("LAZYSLIDE_TILETISSUES") {
+                script "../../tiletissues/main.nf"
+                process {
+                    """
+                    input[0] = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask)
+                    input[1] = 512
+                    input[2] = 0.5
+                    input[3] = 0.125
+                    input[4] = 0.3
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                def tiles = LAZYSLIDE_TILETISSUES.out.tiles.map { meta, store, _pixels -> [meta, store] }
+                input[0] = WSIDATA_INGEST.out.slide.join(tiles)
+                input[1] = 'instanseg'
+                input[2] = file('https://huggingface.co/RendeiroLab/LazySlide-models/resolve/4d4b7bb3195870d2869fd9d9bd77c65235145819/instanseg/instanseg_v0_1_0.pt', checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def results = process.out.cells.sort { it[0].id }.collect { meta, store ->
+                def attrs = path(path(store).resolve('zarr.json').toString()).json.attributes.segmentation
+                assert attrs.model == 'instanseg'
+                assert attrs.instance_type == 'nucleus'
+                assert (attrs.instance_count > 0) == (meta.id == 'tissue')
+                assert attrs.tile_spec?.mpp == (meta.id == 'tissue' ? 0.5 : null)
+                assert java.nio.file.Files.isDirectory(path(store).resolve('shapes/nuclei')) == (meta.id == 'tissue')
+                [meta.id, path(store).fileName.toString()]
+            }
+            assert results.size() == 2
+            assert snapshot(results).match()
+        }
+    }
+}

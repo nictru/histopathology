@@ -26,7 +26,7 @@ input:
         pattern: "*.tissue.zarr"
   - tile_px:
       type: integer
-      description: Tile width and height in pixels at the requested MPP.
+      description: Tile width and height in pixels at the requested MPP. Pass a list to build one grid for each size.
   - mpp:
       type: float
       description: Tile resolution in microns per pixel. Pass an empty string to use the native slide MPP.
@@ -45,6 +45,9 @@ output:
           type: directory
           description: SpatialData store containing tile shapes and a WSIData tile specification for slides with tiles.
           pattern: "*.tiles.zarr"
+      - tile_px:
+          type: integer
+          description: Tile width and height in pixels for this grid.
   versions:
     - versions.yml:
         type: file

@@ -1,0 +1,62 @@
+nextflow_workflow {
+    name "Test Subworkflow SEGMENTATION"
+    script "../main.nf"
+    workflow "SEGMENTATION"
+
+    tag "subworkflows"
+    tag "subworkflows_local"
+    tag "subworkflows/segmentation"
+    tag "lazyslide/cells"
+    tag "lazyslide/tiletissues"
+
+    ["reuse", "retile", "shared"].each { mode ->
+        test("Segmentation grid selection - ${mode}") {
+            options "-stub-run"
+            def models = mode == 'shared' ? ['cellpose', 'nulite'] : ['instanseg']
+
+            when {
+                workflow {
+                    """
+                    def inputs = java.nio.file.Files.createTempDirectory('slide-segmentation')
+                    def normalized = java.nio.file.Files.createDirectory(inputs.resolve('sample.normalized.zarr'))
+                    def slide = java.nio.file.Files.createDirectory(inputs.resolve('sample.zarr'))
+                    def mask = java.nio.file.Files.createDirectory(inputs.resolve('sample.tissue.zarr'))
+                    def tiles = java.nio.file.Files.createDirectory(inputs.resolve('sample.tiles.zarr'))
+                    def meta = [id: 'sample']
+                    input[0] = channel.of([meta, normalized])
+                    input[1] = channel.of([meta, slide, mask])
+                    input[2] = channel.of([meta, tiles])
+                    input[3] = ${mode == 'retile' ? 256 : 512}
+                    input[4] = 0.5
+                    input[5] = 0.125
+                    input[6] = 0.3
+                    def selected_models = ${models.inspect()}
+                    input[7] = selected_models
+                    ['instanseg', 'cellpose', 'nulite', 'histoplus'].eachWithIndex { model, index ->
+                        def checkpoint = inputs.resolve(model + '.pt')
+                        input[8 + index] = model in selected_models ? java.nio.file.Files.createFile(checkpoint) : checkpoint
+                    }
+                    """
+                }
+            }
+
+            then {
+                assert workflow.success
+                def tasks = workflow.trace.tasks().collect { it.name.tokenize(':').last().tokenize(' ').first() }.sort()
+                def expected = [
+                    reuse: ['LAZYSLIDE_CELLS_INSTANSEG'],
+                    retile: ['LAZYSLIDE_CELLS_INSTANSEG', 'SEGMENTATION_TILETISSUES'],
+                    shared: ['LAZYSLIDE_CELLS_CELLPOSE', 'LAZYSLIDE_CELLS_NULITE', 'SEGMENTATION_TILETISSUES'],
+                ]
+                assert tasks == expected[mode]
+                def results = workflow.out.cells.collect { meta, store ->
+                    [meta.id, path(store).fileName.toString()]
+                }
+                assert results.sort { it[1] } == models.collect { ['sample', 'sample.' + it + '.cells.zarr'] }
+                if (mode != 'shared') {
+                    assert snapshot(results).match()
+                }
+            }
+        }
+    }
+}

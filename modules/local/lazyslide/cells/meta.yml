@@ -1,0 +1,80 @@
+name: lazyslide_cells
+description: Segment nuclei or cells on a whole-slide tissue tile grid with LazySlide.
+keywords:
+  - histology
+  - nuclei
+  - cell segmentation
+tools:
+  - lazyslide:
+      description: Whole-slide image analysis for digital pathology.
+      homepage: https://github.com/rendeirolab/LazySlide
+      documentation: https://lazyslide.readthedocs.io/
+      licence: ["MIT"]
+      identifier: biotools:lazyslide
+input:
+  - - meta:
+        type: map
+        description: Sample metadata containing the slide ID.
+    - slide:
+        type: directory
+        description: WSIData store with the RGB image under the wsi key.
+        pattern: "*.zarr"
+    - tiles:
+        type: directory
+        description: Matching SpatialData store with tile and tissue shapes and the tile specification.
+        pattern: "*.tiles.zarr"
+  - model:
+      type: string
+      description: LazySlide segmentation model.
+      enum: [instanseg, cellpose, nulite, histoplus]
+  - checkpoint:
+      type: file
+      description: Local checkpoint staged for the selected model and grid.
+output:
+  cells:
+    - - meta:
+          type: map
+          description: Sample metadata containing the slide ID.
+      - "${prefix}.${model}.cells.zarr":
+          type: directory
+          description: SpatialData store with instance polygons, class labels where supported, and segmentation metadata.
+          pattern: "*.cells.zarr"
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+topics:
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/arm64:
+      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:a3e8c447ed0a7cd1
+      build_id: bd-a3e8c447ed0a7cd1_1
+      scan_id: sc-33a8dc894208ae80_1
+    linux/amd64:
+      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:f370c42ba94e2284
+      build_id: bd-f370c42ba94e2284_1
+      scan_id: sc-b4f900c673f8e0a5_1
+  singularity:
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:346ac7ac8a0821fe
+      build_id: bd-346ac7ac8a0821fe_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/2f/2f09019fe360d60af6d41470156a66bd53888ba80cc0e25a5a4a770bec8ae8af/data
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:659e88c0c4a43fa7
+      build_id: bd-659e88c0c4a43fa7_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/30/303a9fde68906168a9d87747014aad1ffcd8275d90de3449169d88db617e478f/data
+  conda:
+    linux/amd64:
+      lock_file: modules/local/lazyslide/cells/.conda-lock/linux_amd64-bd-f370c42ba94e2284_1.txt
+    linux/arm64:
+      lock_file: modules/local/lazyslide/cells/.conda-lock/linux_arm64-bd-a3e8c447ed0a7cd1_1.txt

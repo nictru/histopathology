@@ -49,6 +49,11 @@ workflow NFCORE_HISTOPATHOLOGY {
         params.pathprofilerqc_checkpoint,
         params.grandqc_checkpoint,
         params.grandqc_variant,
+        params.segmentation_model,
+        params.instanseg_checkpoint,
+        params.cellpose_checkpoint,
+        params.nulite_checkpoint,
+        params.histoplus_checkpoint,
         params.multiqc_config,
         params.multiqc_logo,
         params.multiqc_methods_description,
@@ -60,6 +65,7 @@ workflow NFCORE_HISTOPATHOLOGY {
     tiles             = HISTOPATHOLOGY.out.tiles             // channel: [ val(meta), path(tiles) ]
     tile_qc           = HISTOPATHOLOGY.out.tile_qc           // channel: [ val(meta), path(scored_tiles) ]
     slide_qc          = HISTOPATHOLOGY.out.slide_qc          // channel: [ val(meta), path(artifacts) ]
+    cells             = HISTOPATHOLOGY.out.cells             // channel: [ val(meta), path(instances) ]
     multiqc_report    = HISTOPATHOLOGY.out.multiqc_report    // channel: /path/to/multiqc_report.html
 }
 /*
