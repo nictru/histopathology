@@ -37,13 +37,6 @@ nextflow_workflow {
                     def selected_models = ${models.inspect()}
                     input[7] = selected_models
                     input[8] = ${target_mpp}
-                    ['instanseg', 'cellpose', 'nulite', 'histoplus'].eachWithIndex { model, index ->
-                        def checkpoint = inputs.resolve(model + '.pt')
-                        input[9 + index] = model in selected_models ? java.nio.file.Files.createFile(checkpoint) : checkpoint
-                    }
-                    if (${mode == 'mixed'}) {
-                        input[12] = null
-                    }
                     """
                 }
             }
@@ -55,7 +48,7 @@ nextflow_workflow {
                     reuse: ['LAZYSLIDE_CELLS'],
                     retile: ['LAZYSLIDE_CELLS', 'SEGMENTATION_TILETISSUES'],
                     shared: ['LAZYSLIDE_CELLS', 'LAZYSLIDE_CELLS', 'SEGMENTATION_TILETISSUES'],
-                    mixed: ['HUGGINGFACE_DOWNLOAD_HISTOPLUS'] + ['LAZYSLIDE_CELLS'] * 8 + ['SEGMENTATION_TILETISSUES'] * 4,
+                    mixed: ['LAZYSLIDE_CELLS'] * 8 + ['SEGMENTATION_TILETISSUES'] * 4,
                 ]
                 assert tasks == expected[mode]
                 def results = workflow.out.cells.collect { meta, store ->

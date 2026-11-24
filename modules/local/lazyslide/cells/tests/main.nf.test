@@ -54,9 +54,8 @@ nextflow_process {
             process {
                 """
                 def tiles = LAZYSLIDE_TILETISSUES.out.tiles.map { meta, store, _pixels -> [meta, store] }
-                def checkpoint = file('https://huggingface.co/RendeiroLab/LazySlide-models/resolve/4d4b7bb3195870d2869fd9d9bd77c65235145819/instanseg/instanseg_v0_1_0.pt', checkIfExists: true)
                 input[0] = WSIDATA_INGEST.out.slide.join(tiles).map { meta, slide, grid ->
-                    [meta, slide, grid, 'instanseg', checkpoint]
+                    [meta, slide, grid, 'instanseg']
                 }
                 """
             }

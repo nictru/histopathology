@@ -26,10 +26,6 @@ input:
     - model:
         type: string
         description: Pretrained tile encoder.
-        enum: [resnet50, uni, uni2, gigapath-flash]
-    - checkpoint:
-        type: file
-        description: Staged weights for the selected encoder.
   - batch_size:
       type: integer
       description: Number of tiles per inference batch.
@@ -60,24 +56,24 @@ maintainers:
 containers:
   docker:
     linux/arm64:
-      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:a3e8c447ed0a7cd1
-      build_id: bd-a3e8c447ed0a7cd1_1
-      scan_id: sc-33a8dc894208ae80_1
+      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:64c989016dbcad18
+      build_id: bd-64c989016dbcad18_1
+      scan_id: sc-0aeb5e00fb8683be_1
     linux/amd64:
-      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:f370c42ba94e2284
-      build_id: bd-f370c42ba94e2284_1
-      scan_id: sc-b4f900c673f8e0a5_1
+      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:3a9bdbc81931273f
+      build_id: bd-3a9bdbc81931273f_1
+      scan_id: sc-1d354ed5809aceca_1
   singularity:
     linux/arm64:
-      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:346ac7ac8a0821fe
-      build_id: bd-346ac7ac8a0821fe_1
-      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/2f/2f09019fe360d60af6d41470156a66bd53888ba80cc0e25a5a4a770bec8ae8af/data
+      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:d58c3dfbb3468550
+      build_id: bd-d58c3dfbb3468550_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/b1/b1c5716b422f5a34775844100883be3c9d53fd9a8550a2f6390aa1e65f705310/data
     linux/amd64:
-      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:659e88c0c4a43fa7
-      build_id: bd-659e88c0c4a43fa7_1
-      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/30/303a9fde68906168a9d87747014aad1ffcd8275d90de3449169d88db617e478f/data
+      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:48d6cf144c6189f3
+      build_id: bd-48d6cf144c6189f3_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/2f/2f1a8f4bd7afdab5809b500c1cd8630437984e749f6770bfd9d61559c5b8efca/data
   conda:
     linux/amd64:
-      lock_file: modules/local/lazyslide/featureextraction/.conda-lock/linux_amd64-bd-f370c42ba94e2284_1.txt
+      lock_file: modules/local/lazyslide/featureextraction/.conda-lock/linux_amd64-bd-3a9bdbc81931273f_1.txt
     linux/arm64:
-      lock_file: modules/local/lazyslide/featureextraction/.conda-lock/linux_arm64-bd-a3e8c447ed0a7cd1_1.txt
+      lock_file: modules/local/lazyslide/featureextraction/.conda-lock/linux_arm64-bd-64c989016dbcad18_1.txt

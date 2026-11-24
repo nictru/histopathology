@@ -2,10 +2,16 @@
 
 import base64
 import json
+import os
 from html import escape
 from importlib.metadata import version
 from io import BytesIO
 from pathlib import Path
+
+os.environ.setdefault("HF_HOME", str(Path(".huggingface").resolve()))
+os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
+os.environ.setdefault("HF_HUB_DISABLE_IMPLICIT_TOKEN", "0")
+os.environ.setdefault("CELLPOSE_LOCAL_MODELS_PATH", str(Path(".cellpose").resolve()))
 
 import matplotlib
 import numpy as np
@@ -48,42 +54,38 @@ def write_multiqc(
     Path(filename).write_text(json.dumps(payload), encoding="utf-8")
 
 
-def load_model(name, checkpoint, device):
-    # Load staged weights and select the device before initializing the backend.
-    class StagedModel(MODEL_REGISTRY[name]):
-        def __init__(self):
-            if name == "cellpose":
-                from cellpose.models import CellposeModel
+def load_model(name, device):
+    if name == "cellpose":
+        from cellpose.models import CellposeModel
 
+        class DeviceCellpose(MODEL_REGISTRY["cellpose"]):
+            def __init__(self):
                 self.model = CellposeModel(
-                    pretrained_model=str(checkpoint),
+                    pretrained_model="cpsam_v2",
                     device=device,
                     use_bfloat16=device.type == "cpu"
                     or torch.cuda.is_bf16_supported(including_emulation=False),
                 )
                 self.eval_kwargs = {}
-            elif name == "instanseg":
-                self.model = torch.jit.load(checkpoint, map_location=device).eval()
-            elif name == "nulite":
-                from torch.export.passes import move_to_device_pass
 
+        return DeviceCellpose()
+    if name == "nulite" and device.type == "cuda":
+        from huggingface_hub import hf_hub_download
+        from torch.export.passes import move_to_device_pass
+
+        class CudaNuLite(MODEL_REGISTRY["nulite"]):
+            def __init__(self):
+                weights = hf_hub_download(
+                    "RendeiroLab/LazySlide-models", "NuLite/NuLite_H_exported.pt2"
+                )
+                # Move device constants in the exported graph as well as its parameters.
                 self.model = move_to_device_pass(
-                    torch.export.load(checkpoint), device
+                    torch.export.load(weights), device
                 ).module()
                 self.magnification = "20x"
-            else:
-                from lazyslide_models.segmentation.cellvit_family.histoplus import (
-                    HistoPLUSModel,
-                    remap_state_dict,
-                )
 
-                self.variant = "20x"
-                self.model = HistoPLUSModel(backbone_tile_size=224)
-                state = torch.load(checkpoint, map_location="cpu", weights_only=True)
-                self.model.load_state_dict(remap_state_dict(state))
-                self.model.eval()
-
-    return StagedModel()
+        return CudaNuLite()
+    return MODEL_REGISTRY[name]()
 
 
 def plot_instances(wsi, shapes):
@@ -117,7 +119,6 @@ def plot_instances(wsi, shapes):
 
 name = "${model}"
 device = torch.device("${task.accelerator ? 'cuda' : 'cpu'}")
-checkpoint = next(Path("checkpoint").iterdir())
 shape_key = "cells" if name == "cellpose" else "nuclei"
 grid = read_zarr("tiles.zarr")
 tile_spec = grid.attrs["tile_spec"].get("tiles")
@@ -137,7 +138,7 @@ if tile_spec:
     torch.set_num_threads(int("${task.cpus}"))
     seg.cells(
         wsi,
-        model=load_model(name, checkpoint, device),
+        model=load_model(name, device),
         batch_size=1,
         device=device,
         amp=False,
@@ -151,7 +152,7 @@ if tile_spec:
 segmentation = {
     "model": name,
     "device": device.type,
-    "checkpoint": checkpoint.name,
+    "weight_source": "cellpose" if name == "cellpose" else "lazyslide_registry",
     "instance_type": "model_defined" if name == "cellpose" else "nucleus",
     "instance_count": len(shapes[shape_key]) if shapes else 0,
     "tile_spec": tile_spec,

@@ -28,10 +28,6 @@ input:
       type: string
       description: Tile QC method. Use tileqc for brightness, contrast, sharpness, and saturation.
       enum: [tileqc, focuslitenn, pathprofilerqc]
-  - checkpoint:
-      type: file
-      description: PyTorch export matching the selected learned method. Pass an empty list for tileqc.
-      pattern: "*.pt2"
 output:
   tiles:
     - - meta:

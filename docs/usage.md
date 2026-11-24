@@ -44,36 +44,30 @@ The pipeline fits the selected reference slide once and uses it to normalize eve
 
 The pipeline tiles the tissue on each ingested slide and writes `<OUTDIR>/tiles/<sample>.tiles.zarr`. It defaults to 256 × 256 pixels at the slide's native resolution, with no overlap and at most 30% background per tile. Set `--tile_px`, `--tile_mpp`, `--tile_overlap`, or `--tile_background_fraction` to change these values.
 
-The pipeline measures brightness, contrast, sharpness, and saturation on the original slide tiles. It writes `<sample>.tileqc.zarr` to `<OUTDIR>/qc/`. FocusLiteNN, PathProfilerQC, and GrandQC run by default with pinned checkpoints from the LazySlide team on Hugging Face. Set a checkpoint option to use a different `.pt2` file or URL.
+The pipeline measures brightness, contrast, sharpness, and saturation on the original slide tiles. It writes `<sample>.tileqc.zarr` to `<OUTDIR>/qc/`. FocusLiteNN, PathProfilerQC, and GrandQC load their default model weights through LazySlide. They write `<sample>.focuslitenn.zarr`, `<sample>.pathprofilerqc.zarr`, and `<sample>.grandqc.zarr` to `<OUTDIR>/qc/`.
 
-| Parameter                     | Output in `<OUTDIR>/qc/`               |
-| ----------------------------- | -------------------------------------- |
-| `--focuslitenn_checkpoint`    | `<sample>.focuslitenn.zarr`             |
-| `--pathprofilerqc_checkpoint`  | `<sample>.pathprofilerqc.zarr`          |
-| `--grandqc_checkpoint`        | `<sample>.grandqc.zarr`                |
-
-The pipeline infers the GrandQC variant from the official checkpoint filename. The default checkpoint is for `7x`. To use `5x` or `10x`, supply the corresponding file or URL with `--grandqc_checkpoint`. Set `--grandqc_variant` if your checkpoint has a different filename. The pipeline makes a separate overlapping 512 × 512 grid at 2 MPP for `5x`, 1.5 MPP for `7x`, or 1 MPP for `10x`.
+GrandQC defaults to `7x`. Use `--grandqc_variant` to select `5x`, `7x`, or `10x`. The pipeline makes a separate overlapping 512 × 512 grid at 2 MPP for `5x`, 1.5 MPP for `7x`, or 1 MPP for `10x`.
 
 ## Nucleus and cell segmentation
 
 Set `--segmentation_model instanseg` to segment nuclei. Segmentation uses the normalized slides when you supply a stain reference and the ingested slides when you omit it. Use a comma-separated list such as `--segmentation_model instanseg,nulite` to run several methods on each slide. The default is `none`.
 
-| Model | Instance polygons | Tile size | Checkpoint parameter |
-| --- | --- | --- | --- |
-| `instanseg` | Nuclei | 512 × 512 px | `--instanseg_checkpoint` |
-| `cellpose` | Objects detected by the Cellpose checkpoint | 256 × 256 px | `--cellpose_checkpoint` |
-| `nulite` | Nuclei with cell-type labels | 256 × 256 px | `--nulite_checkpoint` |
-| `histoplus` | Nuclei with cell-type labels | 224 × 224 px | `--histoplus_checkpoint` |
+| Model | Instance polygons | Tile size |
+| --- | --- | --- |
+| `instanseg` | Nuclei | 512 × 512 px |
+| `cellpose` | Objects detected by the Cellpose checkpoint | 256 × 256 px |
+| `nulite` | Nuclei with cell-type labels | 256 × 256 px |
+| `histoplus` | Nuclei with cell-type labels | 224 × 224 px |
 
 Set `--segmentation_mpp` to choose the tile resolution for all selected segmentation models. The default is 0.5 µm/px with 12.5% overlap. Use a resolution compatible with each selected checkpoint and supply calibrated slides scanned at that resolution or finer. Selected models with the same tile size share a grid. The pipeline reuses the regular grid if its size, MPP, and overlap match the model settings. For example, `--tile_px 512 --tile_mpp 0.5 --tile_overlap 0.125` shares the grid between InstanSeg and tile QC at the default segmentation resolution.
 
-InstanSeg, Cellpose, and NuLite use pinned public weights by default. Use the corresponding checkpoint parameter to supply a compatible file or URL.
+InstanSeg, Cellpose, and NuLite load their public default weights on the compute worker.
 
-For HistoPLUS, request access on the [model page](https://huggingface.co/Owkin-Bioptimus/histoplus) and store a Hugging Face read token with access to the repository as the `HF_TOKEN` [Nextflow secret](https://docs.seqera.io/nextflow/secrets). The pipeline downloads the pinned 20× checkpoint once and stages it from the work directory. Use a work directory restricted to authorized users.
+For HistoPLUS, request access on the [model page](https://huggingface.co/Owkin-Bioptimus/histoplus) and store a Hugging Face read token with access to the repository as the `HF_TOKEN` [Nextflow secret](https://docs.seqera.io/nextflow/secrets). LazySlide downloads the 20× checkpoint on the compute worker.
 
-For AWS Batch runs launched from Seqera Platform, configure the secret in Platform. For AWS Batch runs launched directly from the CLI, supply an authorized checkpoint file or URI with `--histoplus_checkpoint`.
+For AWS Batch, launch through Seqera Platform with the secret configured in the workspace.
 
-Find results in `<OUTDIR>/segmentation/<sample>.<model>.cells.zarr`. The `nuclei` or `cells` shapes are in the slide coordinate system. Each store records the model, checkpoint filename, device, tile specification, and instance count. A slide with zero detections has an instance count of zero and no shapes layer.
+Find results in `<OUTDIR>/segmentation/<sample>.<model>.cells.zarr`. The `nuclei` or `cells` shapes are in the slide coordinate system. Each store records the model, weight source, device, tile specification, and instance count. A slide with zero detections has an instance count of zero and no shapes layer.
 
 ### GPU acceleration
 
@@ -83,16 +77,18 @@ Add the `gpu` profile to your container profile, for example `-profile docker,gp
 
 Set `--embedding_model resnet50` to generate one feature vector per tissue tile. To run several encoders, pass a comma-separated list such as `--embedding_model uni,uni2,gigapath-flash`. Embedding extraction is disabled by default and can run independently of cell segmentation.
 
-The encoders share a grid of non-overlapping 256 × 256 pixel tiles at 0.5 µm/px. Supply slides calibrated at that resolution or finer. If the regular tiling parameters match, the pipeline reuses that grid. Embedding extraction uses the normalized slide when you supply a stain reference and the ingested slide when you omit it. Set `--embedding_batch_size` to change the inference batch size from its default of 16. Add the `gpu` profile for CUDA inference.
+The pipeline uses non-overlapping tiles at 0.5 µm/px. Most encoders use 256 × 256 pixel tiles. ConceptCLIP and MUSK use 384 × 384, and CONCH v1.5, MedSigLIP, and TITAN use 448 × 448. Models that use the same tile size share a grid. The pipeline reuses the regular grid when its size, resolution, and overlap match. Supply slides calibrated at 0.5 µm/px or finer.
 
-| Encoder | Checkpoint parameter |
-| --- | --- |
-| ResNet50 A1 | `--resnet50_checkpoint` |
-| UNI | `--uni_checkpoint` |
-| UNI2-h | `--uni2_checkpoint` |
-| GigaPath-Flash tile encoder | `--gigapath_flash_checkpoint` |
+Embedding extraction uses the normalized slide when you supply a stain reference and the ingested slide when you omit it. Set `--embedding_batch_size` to change the default batch size of 16. Add the `gpu` profile for CUDA inference.
 
-ResNet50 uses a pinned public checkpoint. For UNI, UNI2, and GigaPath-Flash, request access to the model on Hugging Face and set the `HF_TOKEN` Nextflow secret to download the pinned weights. You can also supply a compatible checkpoint file or URL using the corresponding parameter.
+ResNet50 A1 loads its default weights through timm.
+
+Registry models including UNI, UNI2, GigaPath, and GigaPath-Flash load their weights through [LazySlide’s model registry](https://lazyslide.readthedocs.io/en/v0.13.0/avail_models.html). For gated weights, request access to the model and set the `HF_TOKEN` Nextflow secret. Workers need network access to the upstream model repositories. By default, each task caches downloaded weights in its work directory, so runs with multiple slides can download the same weights more than once. The embedding module includes the encoder software dependencies in its CPU and CUDA environments.
+
+Registry keys supported by `--embedding_model`:
+
+- **Vision** — `chief`, `conch-madeleine`, `crisp`, `crown`, `ctranspath`, `genbio-pathfm`, `gigapath`, `gigapath-flash`, `gpfm`, `h-optimus-0`, `h-optimus-1`, `h0-mini`, `hibou-b`, `hibou-l`, `lunit-bt`, `lunit-dino-s8`, `lunit-dino-s8-moozy`, `lunit-dino-s16`, `lunit-mocov2`, `lunit-swav`, `mascaret`, `midnight`, `mstar`, `open-midnight`, `path_orchestra`, `phaet`, `phikon`, `phikonv2`, `rudolfv2`, `rudolfv2-b`, `rudolfv2-s`, `uni`, `uni2`, `virchow`, `virchow2`.
+- **Image branches of multimodal encoders** — `biomedclip`, `conceptclip`, `conch`, `conch_v1.5`, `keep`, `medsiglip`, `musk`, `omiclip`, `plip`, `quiltnet-b16`, `quiltnet-b16-pmb`, `quiltnet-b32`, `titan`.
 
 Each `<OUTDIR>/embeddings/<sample>.<model>.embeddings.zarr` contains the tile geometries and a linked AnnData table named `<model>_tiles`. The table contains one row per tile, with a `tile_id` that identifies its geometry. Slides without eligible tiles produce a store with a tile count of zero.
 

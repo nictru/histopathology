@@ -22,15 +22,6 @@ input:
         Tile grids for tile-level quality control.
         Structure: [ val(meta), path(tiles) ]
       pattern: "*.tiles.zarr"
-  - focuslitenn_checkpoint:
-      type: string
-      description: Path or URL of the FocusLiteNN PyTorch export.
-  - pathprofilerqc_checkpoint:
-      type: string
-      description: Path or URL of the PathProfilerQC PyTorch export.
-  - grandqc_checkpoint:
-      type: string
-      description: Path or URL of the GrandQC PyTorch export.
   - grandqc_variant:
       type: string
       description: Model variant. Omit to infer the variant from an official checkpoint filename.

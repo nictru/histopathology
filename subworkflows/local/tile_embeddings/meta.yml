@@ -6,7 +6,6 @@ keywords:
   - embeddings
   - feature extraction
 components:
-  - huggingface/download
   - lazyslide/featureextraction
   - lazyslide/tiletissues
 input:
@@ -40,18 +39,6 @@ input:
   - batch_size:
       type: integer
       description: Number of tiles per inference batch.
-  - resnet50_checkpoint:
-      type: string
-      description: ResNet50 A1 checkpoint path or URL.
-  - uni_checkpoint:
-      type: string
-      description: Optional UNI checkpoint path or URL.
-  - uni2_checkpoint:
-      type: string
-      description: Optional UNI2-h checkpoint path or URL.
-  - gigapath_flash_checkpoint:
-      type: string
-      description: Optional GigaPath-Flash tile encoder checkpoint path or URL.
 output:
   - embeddings:
       type: file

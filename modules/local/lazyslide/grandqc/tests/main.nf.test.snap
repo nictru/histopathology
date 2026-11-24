@@ -1,5 +1,5 @@
 {
-    "Stage the slide, tile grid, and checkpoint": {
+    "Select the GrandQC variant": {
         "content": [
             "sample.grandqc.zarr"
         ],

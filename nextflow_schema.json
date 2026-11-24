@@ -79,33 +79,6 @@
                     "exclusiveMinimum": 0,
                     "default": 0.5,
                     "description": "Segmentation tile resolution in microns per pixel. Applies to all selected segmentation models."
-                },
-                "instanseg_checkpoint": {
-                    "type": "string",
-                    "format": "file-path",
-                    "exists": true,
-                    "default": "https://huggingface.co/RendeiroLab/LazySlide-models/resolve/4d4b7bb3195870d2869fd9d9bd77c65235145819/instanseg/instanseg_v0_1_0.pt",
-                    "description": "InstanSeg checkpoint file or URL."
-                },
-                "cellpose_checkpoint": {
-                    "type": "string",
-                    "format": "file-path",
-                    "exists": true,
-                    "default": "https://huggingface.co/mouseland/cellpose-sam/resolve/7c61431b5fbb078f3296754bd15d9f51b320f837/cpsam_v2",
-                    "description": "Cellpose checkpoint file or URL."
-                },
-                "nulite_checkpoint": {
-                    "type": "string",
-                    "format": "file-path",
-                    "exists": true,
-                    "default": "https://huggingface.co/RendeiroLab/LazySlide-models/resolve/4d4b7bb3195870d2869fd9d9bd77c65235145819/NuLite/NuLite_H_exported.pt2",
-                    "description": "NuLite checkpoint file or URL."
-                },
-                "histoplus_checkpoint": {
-                    "type": "string",
-                    "format": "file-path",
-                    "exists": true,
-                    "description": "Optional HistoPLUS 20x checkpoint file or URL. When omitted, the pipeline downloads the pinned checkpoint using the HF_TOKEN Nextflow secret."
                 }
             }
         },
@@ -118,35 +91,14 @@
                 "embedding_model": {
                     "type": "string",
                     "default": "none",
-                    "pattern": "^(none|(resnet50|uni|uni2|gigapath-flash)(, *(resnet50|uni|uni2|gigapath-flash))*)$",
-                    "description": "Comma-separated tile embedding models. Choose resnet50, uni, uni2, or gigapath-flash. Use none to skip embedding extraction."
+                    "pattern": "^(none|(biomedclip|chief|conceptclip|conch|conch-madeleine|conch_v1\\.5|crisp|crown|ctranspath|genbio-pathfm|gigapath|gigapath-flash|gpfm|h-optimus-0|h-optimus-1|h0-mini|hibou-b|hibou-l|keep|lunit-bt|lunit-dino-s16|lunit-dino-s8|lunit-dino-s8-moozy|lunit-mocov2|lunit-swav|mascaret|medsiglip|midnight|mstar|musk|omiclip|open-midnight|path_orchestra|phaet|phikon|phikonv2|plip|quiltnet-b16|quiltnet-b16-pmb|quiltnet-b32|resnet50|rudolfv2|rudolfv2-b|rudolfv2-s|titan|uni|uni2|virchow|virchow2)(, *(biomedclip|chief|conceptclip|conch|conch-madeleine|conch_v1\\.5|crisp|crown|ctranspath|genbio-pathfm|gigapath|gigapath-flash|gpfm|h-optimus-0|h-optimus-1|h0-mini|hibou-b|hibou-l|keep|lunit-bt|lunit-dino-s16|lunit-dino-s8|lunit-dino-s8-moozy|lunit-mocov2|lunit-swav|mascaret|medsiglip|midnight|mstar|musk|omiclip|open-midnight|path_orchestra|phaet|phikon|phikonv2|plip|quiltnet-b16|quiltnet-b16-pmb|quiltnet-b32|resnet50|rudolfv2|rudolfv2-b|rudolfv2-s|titan|uni|uni2|virchow|virchow2))*)$",
+                    "description": "Comma-separated tile encoders from the LazySlide model registry or resnet50. Use none to skip embedding extraction."
                 },
                 "embedding_batch_size": {
                     "type": "integer",
                     "minimum": 1,
                     "default": 16,
                     "description": "Number of tiles per inference batch."
-                },
-                "resnet50_checkpoint": {
-                    "type": "string",
-                    "format": "file-path",
-                    "default": "https://huggingface.co/timm/resnet50.a1_in1k/resolve/767268603ca0cb0bfe326fa87277f19c419566ef/model.safetensors",
-                    "description": "ResNet50 A1 checkpoint file or URL."
-                },
-                "uni_checkpoint": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "UNI checkpoint file or URL. When omitted, use the HF_TOKEN Nextflow secret to download the pinned gated weights."
-                },
-                "uni2_checkpoint": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "UNI2-h checkpoint file or URL. When omitted, use the HF_TOKEN Nextflow secret to download the pinned gated weights."
-                },
-                "gigapath_flash_checkpoint": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "GigaPath-Flash tile encoder checkpoint file or URL. When omitted, use the HF_TOKEN Nextflow secret to download the pinned gated weights."
                 }
             }
         },
@@ -181,34 +133,11 @@
                     "default": 0.3,
                     "description": "Maximum fraction of a tile that may fall outside the tissue mask."
                 },
-                "focuslitenn_checkpoint": {
-                    "type": "string",
-                    "format": "file-path",
-                    "exists": true,
-                    "pattern": "\\.pt2$",
-                    "default": "https://huggingface.co/RendeiroLab/LazySlide-models/resolve/4d4b7bb3195870d2869fd9d9bd77c65235145819/FocusLiteNN/FocusLiteNN_exported.pt2",
-                    "description": "PyTorch export for FocusLiteNN tile scoring. Accepts a checkpoint path or URL."
-                },
-                "pathprofilerqc_checkpoint": {
-                    "type": "string",
-                    "format": "file-path",
-                    "exists": true,
-                    "pattern": "\\.pt2$",
-                    "default": "https://huggingface.co/RendeiroLab/LazySlide-models-gpl/resolve/2308efc43ed66e457dd5b8c1b8a05edc9c34e8d3/PathProfiler/PathProfiler_patch_quality_exported.pt2",
-                    "description": "PyTorch export for PathProfilerQC tile scoring. Accepts a checkpoint path or URL."
-                },
-                "grandqc_checkpoint": {
-                    "type": "string",
-                    "format": "file-path",
-                    "exists": true,
-                    "pattern": "\\.pt2$",
-                    "default": "https://huggingface.co/RendeiroLab/LazySlide-models/resolve/4d4b7bb3195870d2869fd9d9bd77c65235145819/GrandQC/GrandQC_MPP15_exported.pt2",
-                    "description": "PyTorch export for GrandQC slide artifact segmentation. The default checkpoint is for 7x."
-                },
                 "grandqc_variant": {
                     "type": "string",
                     "enum": ["5x", "7x", "10x"],
-                    "description": "GrandQC variant matching the supplied checkpoint. Inferred from official checkpoint filenames."
+                    "default": "7x",
+                    "description": "GrandQC magnification variant."
                 }
             }
         },

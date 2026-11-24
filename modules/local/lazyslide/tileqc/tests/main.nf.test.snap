@@ -1,5 +1,5 @@
 {
-    "Stage a focuslitenn checkpoint": {
+    "Select the focuslitenn model": {
         "content": [
             "sample.focuslitenn.zarr"
         ],
@@ -28,7 +28,7 @@
             "nextflow": "26.10.7"
         }
     },
-    "Stage a pathprofilerqc checkpoint": {
+    "Select the pathprofilerqc model": {
         "content": [
             "sample.pathprofilerqc.zarr"
         ],

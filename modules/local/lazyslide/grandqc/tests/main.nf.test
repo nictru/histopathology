@@ -7,7 +7,7 @@ nextflow_process {
     tag "modules_local"
     tag "lazyslide/grandqc"
 
-    test("Stage the slide, tile grid, and checkpoint") {
+    test("Select the GrandQC variant") {
         options "-stub-run"
 
         when {
@@ -17,8 +17,7 @@ nextflow_process {
                 def slide = java.nio.file.Files.createDirectory(inputs.resolve('slide.zarr'))
                 def tiles = java.nio.file.Files.createDirectory(inputs.resolve('tiles.zarr'))
                 input[0] = [[id: 'sample'], slide, tiles]
-                input[1] = java.nio.file.Files.createFile(inputs.resolve('model.pt2'))
-                input[2] = '7x'
+                input[1] = '7x'
                 """
             }
         }

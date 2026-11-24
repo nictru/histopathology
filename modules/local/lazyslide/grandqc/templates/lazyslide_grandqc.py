@@ -2,10 +2,14 @@
 
 import base64
 import json
+import os
 from html import escape
 from importlib.metadata import version
 from io import BytesIO
 from pathlib import Path
+
+os.environ.setdefault("HF_HOME", str(Path(".huggingface").resolve()))
+os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -46,11 +50,6 @@ def write_multiqc(
     Path(filename).write_text(json.dumps(payload), encoding="utf-8")
 
 
-class CheckpointGrandQC(GrandQCArtifact):
-    def __init__(self):
-        self.model = torch.export.load("checkpoint.pt2").module()
-
-
 def detect_artifacts(wsi, tiles, variant):
     wsi.shapes["tiles"] = tiles.shapes["tiles"]
     wsi.attrs["tile_spec"] = tiles.attrs["tile_spec"]
@@ -58,7 +57,7 @@ def detect_artifacts(wsi, tiles, variant):
     seg.artifact(
         wsi,
         tile_key="tiles",
-        model=CheckpointGrandQC(),
+        model=GrandQCArtifact(variant=variant),
         variant=variant,
         device="cpu",
         pbar=False,

@@ -32,22 +32,11 @@ workflow HISTOPATHOLOGY {
     tile_mpp
     tile_overlap
     tile_background_fraction
-    focuslitenn_checkpoint
-    pathprofilerqc_checkpoint
-    grandqc_checkpoint
     grandqc_variant
     segmentation_model
     segmentation_mpp
-    instanseg_checkpoint
-    cellpose_checkpoint
-    nulite_checkpoint
-    histoplus_checkpoint
     embedding_model
     embedding_batch_size
-    resnet50_checkpoint
-    uni_checkpoint
-    uni2_checkpoint
-    gigapath_flash_checkpoint
     multiqc_config
     multiqc_logo
     multiqc_methods_description
@@ -68,9 +57,6 @@ workflow HISTOPATHOLOGY {
     QC(
         ch_slides_with_masks,
         ch_tiles,
-        focuslitenn_checkpoint,
-        pathprofilerqc_checkpoint,
-        grandqc_checkpoint,
         grandqc_variant,
     )
 
@@ -103,10 +89,6 @@ workflow HISTOPATHOLOGY {
             tile_background_fraction,
             segmentation_models,
             segmentation_mpp,
-            instanseg_checkpoint,
-            cellpose_checkpoint,
-            nulite_checkpoint,
-            histoplus_checkpoint,
         )
         ch_cells = SEGMENTATION.out.cells
         ch_multiqc_files = ch_multiqc_files.mix(SEGMENTATION.out.multiqc_files)
@@ -117,7 +99,7 @@ workflow HISTOPATHOLOGY {
         : embedding_model.split(',', -1).collect { model -> model.trim() }.unique()
     def ch_embeddings = channel.empty()
     if (embedding_models) {
-        def unsupported_models = embedding_models - ['resnet50', 'uni', 'uni2', 'gigapath-flash']
+        def unsupported_models = embedding_models.findAll { model -> !(model ==~ /[a-z0-9][a-z0-9_.-]*/) || model == 'none' }
         if (unsupported_models) {
             error("Unsupported embedding models: ${unsupported_models.join(', ')}.")
         }
@@ -131,10 +113,6 @@ workflow HISTOPATHOLOGY {
             tile_background_fraction,
             embedding_models,
             embedding_batch_size,
-            resnet50_checkpoint,
-            uni_checkpoint,
-            uni2_checkpoint,
-            gigapath_flash_checkpoint,
         )
         ch_embeddings = TILE_EMBEDDINGS.out.embeddings
     }

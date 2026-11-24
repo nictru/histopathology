@@ -9,7 +9,6 @@ process LAZYSLIDE_GRANDQC {
 
     input:
     tuple val(meta), path(slide, stageAs: 'source.zarr'), path(tiles, stageAs: 'tiles.zarr')
-    path checkpoint, stageAs: 'checkpoint.pt2', arity: '1'
     val variant
 
     output:

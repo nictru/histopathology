@@ -10,7 +10,6 @@ process LAZYSLIDE_TILEQC {
     input:
     tuple val(meta), path(slide, stageAs: 'source.zarr'), path(tiles, stageAs: 'tiles.zarr')
     val method
-    path checkpoint, stageAs: 'checkpoint.pt2'
 
     output:
     tuple val(meta), path("${prefix}.${method}.zarr"), emit: tiles
@@ -27,15 +26,6 @@ process LAZYSLIDE_TILEQC {
     }
     if (!(method in ['tileqc', 'focuslitenn', 'pathprofilerqc'])) {
         error("Unsupported tile QC method: ${method}")
-    }
-    if (method == 'tileqc' && checkpoint) {
-        error('Pass an empty checkpoint input for tileqc.')
-    }
-    if (method != 'tileqc' && !checkpoint) {
-        error("Supply a checkpoint file for ${method}.")
-    }
-    if (checkpoint instanceof Collection && checkpoint.size() > 1) {
-        error('Supply one checkpoint file per tile QC task.')
     }
     template('lazyslide_tileqc.py')
 

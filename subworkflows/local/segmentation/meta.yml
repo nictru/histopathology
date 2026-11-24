@@ -6,7 +6,6 @@ keywords:
   - nuclei
   - cell segmentation
 components:
-  - huggingface/download
   - lazyslide/cells
   - lazyslide/tiletissues
 input:
@@ -46,18 +45,6 @@ input:
   - segmentation_mpp:
       type: float
       description: Segmentation tile resolution in microns per pixel.
-  - instanseg_checkpoint:
-      type: string
-      description: InstanSeg checkpoint path or URL.
-  - cellpose_checkpoint:
-      type: string
-      description: Cellpose checkpoint path or URL.
-  - nulite_checkpoint:
-      type: string
-      description: NuLite checkpoint path or URL.
-  - histoplus_checkpoint:
-      type: string
-      description: Optional HistoPLUS 20x checkpoint path or URL. Defaults to a gated Hugging Face download.
 output:
   - cells:
       type: file

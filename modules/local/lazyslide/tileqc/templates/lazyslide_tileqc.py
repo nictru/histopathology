@@ -2,11 +2,15 @@
 
 import base64
 import json
+import os
 from html import escape
 from importlib.metadata import version
 from io import BytesIO
 from math import ceil
 from pathlib import Path
+
+os.environ.setdefault("HF_HOME", str(Path(".huggingface").resolve()))
+os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 
 import datashader as ds
 import matplotlib
@@ -61,12 +65,7 @@ def tile_model(method):
     if method == "tileqc":
         return CVCompose(Brightness(), Contrast(), Sharpness(), Saturation())
 
-    # Preserve the registry model's transforms and scoring with the staged export.
-    class CheckpointModel(MODEL_REGISTRY[method]):
-        def __init__(self):
-            self.model = torch.export.load("checkpoint.pt2").module()
-
-    return CheckpointModel()
+    return MODEL_REGISTRY[method]()
 
 
 def score_tiles(wsi, tiles, method):

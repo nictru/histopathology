@@ -13,21 +13,21 @@ process LAZYSLIDE_FEATUREEXTRACTION {
         def arm64 = (task.arch ?: System.getProperty('os.arch')) in ['aarch64', 'arm64', 'linux/aarch64', 'linux/arm64', 'linux/arm64/v8']
         if (task.accelerator) {
             return arm64
-                ? 'community.wave.seqera.io/library/pip_python_cellpose_dask_pruned:d21e545f93f33ca3'
-                : 'community.wave.seqera.io/library/pip_python_cellpose_dask_pruned:922892ee7666738d'
+                ? 'community.wave.seqera.io/library/pip_python_cellpose_dask_pruned:5bd948674751a4d4'
+                : 'community.wave.seqera.io/library/pip_python_cellpose_dask_pruned:fcf74c2864653e72'
         }
         if (workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container) {
             return arm64
-                ? 'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/2f/2f09019fe360d60af6d41470156a66bd53888ba80cc0e25a5a4a770bec8ae8af/data'
-                : 'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/30/303a9fde68906168a9d87747014aad1ffcd8275d90de3449169d88db617e478f/data'
+                ? 'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/b1/b1c5716b422f5a34775844100883be3c9d53fd9a8550a2f6390aa1e65f705310/data'
+                : 'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/2f/2f1a8f4bd7afdab5809b500c1cd8630437984e749f6770bfd9d61559c5b8efca/data'
         }
         arm64
-            ? 'community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:a3e8c447ed0a7cd1'
-            : 'community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:f370c42ba94e2284'
+            ? 'community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:64c989016dbcad18'
+            : 'community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:3a9bdbc81931273f'
     }
 
     input:
-    tuple val(meta), path(slide, stageAs: 'source.zarr'), path(tiles, stageAs: 'tiles.zarr'), val(model), path(checkpoint, stageAs: 'checkpoint/*', arity: '1')
+    tuple val(meta), path(slide, stageAs: 'source.zarr'), path(tiles, stageAs: 'tiles.zarr'), val(model)
     val batch_size
 
     output:
@@ -42,7 +42,7 @@ process LAZYSLIDE_FEATUREEXTRACTION {
     if (!(prefix ==~ /[A-Za-z0-9_][A-Za-z0-9_.-]*/)) {
         error("Unsafe output prefix: ${prefix}")
     }
-    if (!(model in ['resnet50', 'uni', 'uni2', 'gigapath-flash'])) {
+    if (!(model ==~ /[a-z0-9][a-z0-9_.-]*/)) {
         error("Unsupported embedding model: ${model}")
     }
     batch = batch_size.toString().toInteger()

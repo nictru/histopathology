@@ -63,7 +63,6 @@ nextflow_process {
                 def tiles = LAZYSLIDE_TILETISSUES.out.tiles.map { meta, store, _pixels -> [meta, store] }
                 input[0] = WSIDATA_INGEST.out.slide.join(tiles)
                 input[1] = 'tileqc'
-                input[2] = []
                 """
             }
         }
@@ -86,7 +85,7 @@ nextflow_process {
     }
 
     ['focuslitenn', 'pathprofilerqc'].each { method ->
-        test("Stage a ${method} checkpoint") {
+        test("Select the ${method} model") {
             options "-stub-run"
 
             when {
@@ -97,7 +96,6 @@ nextflow_process {
                     def tiles = java.nio.file.Files.createDirectory(inputs.resolve('tiles.zarr'))
                     input[0] = [[id: 'sample'], slide, tiles]
                     input[1] = '${method}'
-                    input[2] = java.nio.file.Files.createFile(inputs.resolve('model.pt2'))
                     """
                 }
             }
