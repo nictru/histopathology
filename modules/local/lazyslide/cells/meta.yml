@@ -23,13 +23,13 @@ input:
         type: directory
         description: Matching SpatialData store with tile and tissue shapes and the tile specification.
         pattern: "*.tiles.zarr"
-  - model:
-      type: string
-      description: LazySlide segmentation model.
-      enum: [instanseg, cellpose, nulite, histoplus]
-  - checkpoint:
-      type: file
-      description: Local checkpoint staged for the selected model and grid.
+    - model:
+        type: string
+        description: LazySlide segmentation model.
+        enum: [instanseg, cellpose, nulite, histoplus]
+    - checkpoint:
+        type: file
+        description: Local checkpoint staged for the selected model and grid.
 output:
   cells:
     - - meta:

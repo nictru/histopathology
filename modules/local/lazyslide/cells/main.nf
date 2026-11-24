@@ -18,9 +18,7 @@ process LAZYSLIDE_CELLS {
             : 'community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:f370c42ba94e2284'}"
 
     input:
-    tuple val(meta), path(slide, stageAs: 'source.zarr'), path(tiles, stageAs: 'tiles.zarr')
-    val model
-    path checkpoint, stageAs: 'checkpoint/*', arity: '1'
+    tuple val(meta), path(slide, stageAs: 'source.zarr'), path(tiles, stageAs: 'tiles.zarr'), val(model), path(checkpoint, stageAs: 'checkpoint/*', arity: '1')
 
     output:
     tuple val(meta), path("${prefix}.${model}.cells.zarr"), emit: cells

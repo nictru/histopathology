@@ -9,25 +9,28 @@ nextflow_workflow {
     tag "lazyslide/cells"
     tag "lazyslide/tiletissues"
 
-    ["reuse", "retile", "shared"].each { mode ->
+    ["reuse", "retile", "shared", "mixed"].each { mode ->
         test("Segmentation grid selection - ${mode}") {
             options "-stub-run"
-            def models = mode == 'shared' ? ['cellpose', 'nulite'] : ['instanseg']
+            def models = [shared: ['cellpose', 'nulite'], mixed: ['cellpose', 'histoplus', 'instanseg', 'nulite']].get(mode, ['instanseg'])
+            def samples = mode == 'mixed' ? ['sample', 'sample-2'] : ['sample']
             def target_mpp = mode == 'reuse' ? 0.9091 : 0.5
 
             when {
                 workflow {
                     """
                     def inputs = java.nio.file.Files.createTempDirectory('slide-segmentation')
-                    def normalized = java.nio.file.Files.createDirectory(inputs.resolve('sample.normalized.zarr'))
-                    def slide = java.nio.file.Files.createDirectory(inputs.resolve('sample.zarr'))
-                    def mask = java.nio.file.Files.createDirectory(inputs.resolve('sample.tissue.zarr'))
-                    def tiles = java.nio.file.Files.createDirectory(inputs.resolve('sample.tiles.zarr'))
-                    def meta = [id: 'sample']
-                    input[0] = channel.of([meta, normalized])
-                    input[1] = channel.of([meta, slide, mask])
-                    input[2] = channel.of([meta, tiles])
-                    input[3] = ${mode == 'retile' ? 256 : 512}
+                    def slides = ${samples.inspect()}.collect { id ->
+                        def normalized = java.nio.file.Files.createDirectory(inputs.resolve(id + '.normalized.zarr'))
+                        def slide = java.nio.file.Files.createDirectory(inputs.resolve(id + '.zarr'))
+                        def mask = java.nio.file.Files.createDirectory(inputs.resolve(id + '.tissue.zarr'))
+                        def tiles = java.nio.file.Files.createDirectory(inputs.resolve(id + '.tiles.zarr'))
+                        [[id: id], normalized, slide, mask, tiles]
+                    }
+                    input[0] = channel.fromList(slides).map { meta, normalized, slide, mask, tiles -> [meta, normalized] }
+                    input[1] = channel.fromList(slides).map { meta, normalized, slide, mask, tiles -> [meta, slide, mask] }
+                    input[2] = channel.fromList(slides).map { meta, normalized, slide, mask, tiles -> [meta, tiles] }
+                    input[3] = ${mode in ['retile', 'mixed'] ? 256 : 512}
                     input[4] = ${target_mpp}
                     input[5] = 0.125
                     input[6] = 0.3
@@ -38,6 +41,9 @@ nextflow_workflow {
                         def checkpoint = inputs.resolve(model + '.pt')
                         input[9 + index] = model in selected_models ? java.nio.file.Files.createFile(checkpoint) : checkpoint
                     }
+                    if (${mode == 'mixed'}) {
+                        input[12] = null
+                    }
                     """
                 }
             }
@@ -46,16 +52,18 @@ nextflow_workflow {
                 assert workflow.success
                 def tasks = workflow.trace.tasks().collect { it.name.tokenize(':').last().tokenize(' ').first() }.sort()
                 def expected = [
-                    reuse: ['LAZYSLIDE_CELLS_INSTANSEG'],
-                    retile: ['LAZYSLIDE_CELLS_INSTANSEG', 'SEGMENTATION_TILETISSUES'],
-                    shared: ['LAZYSLIDE_CELLS_CELLPOSE', 'LAZYSLIDE_CELLS_NULITE', 'SEGMENTATION_TILETISSUES'],
+                    reuse: ['LAZYSLIDE_CELLS'],
+                    retile: ['LAZYSLIDE_CELLS', 'SEGMENTATION_TILETISSUES'],
+                    shared: ['LAZYSLIDE_CELLS', 'LAZYSLIDE_CELLS', 'SEGMENTATION_TILETISSUES'],
+                    mixed: ['HUGGINGFACE_DOWNLOAD_HISTOPLUS'] + ['LAZYSLIDE_CELLS'] * 8 + ['SEGMENTATION_TILETISSUES'] * 4,
                 ]
                 assert tasks == expected[mode]
                 def results = workflow.out.cells.collect { meta, store ->
                     [meta.id, path(store).fileName.toString()]
                 }
-                assert results.sort { it[1] } == models.collect { ['sample', 'sample.' + it + '.cells.zarr'] }
-                if (mode != 'shared') {
+                def expected_results = samples.collectMany { id -> models.collect { model -> [id, id + '.' + model + '.cells.zarr'] } }
+                assert results.sort { it[1] } == expected_results.sort { it[1] }
+                if (mode in ['reuse', 'retile']) {
                     assert snapshot(results).match()
                 }
             }
