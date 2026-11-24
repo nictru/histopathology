@@ -17,7 +17,7 @@ input:
         description: Sample metadata containing the slide ID.
     - slide:
         type: file
-        description: Original CZI, TIFF, or JPEG slide.
+        description: Original CZI, TIFF, SVS, or JPEG slide.
         pattern: "*.{czi,tif,tiff,jpg,jpeg}"
     - scene:
         type: integer

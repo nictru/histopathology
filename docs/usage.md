@@ -15,13 +15,13 @@ Pass a CSV file to `--input` with one row per slide. Give each slide a unique sa
 | Column | Description |
 | ------ | ----------- |
 | `sample` | Sample ID used to name the output files. |
-| `slide` | Path to a TIFF, JPEG, or Zeiss CZI slide. |
-| `scene` | Zero-based scene index for a CZI. Leave it blank for TIFF, JPEG, or a single-scene CZI. |
-| `mpp` | Pixel size in microns. Supply it for JPEG. For TIFF and CZI, leave it blank to use the source calibration. |
+| `slide` | Path to a TIFF, Aperio SVS, JPEG, or Zeiss CZI slide. |
+| `scene` | Zero-based scene index for a CZI. Leave it blank for TIFF, SVS, JPEG, or a single-scene CZI. |
+| `mpp` | Pixel size in microns. Supply it for JPEG. For TIFF, SVS, and CZI, leave it blank to use the source calibration. |
 
 See the [example samplesheet](../assets/samplesheet.csv).
 
-The pipeline reads CZI, TIFF, and JPEG through WSIData's pylibCZI, TiffSlide, and Bio-Formats readers, respectively. It writes a self-contained `<sample>.zarr` to `<OUTDIR>/slides/`. The store contains the RGB image under the `wsi` key. Its attributes record the pixel calibration and the original CZI scene origin when applicable. The pylibCZI reader fills gaps in a CZI scene with black pixels.
+The pipeline uses WSIData to read CZI with pylibCZI, TIFF and SVS with TiffSlide, and JPEG with Bio-Formats. It writes a self-contained `<sample>.zarr` to `<OUTDIR>/slides/`. The store contains the RGB image under the `wsi` key. Its attributes record the pixel calibration and the original CZI scene origin when applicable. The pylibCZI reader fills gaps in a CZI scene with black pixels.
 
 Normalization reads the ingested Zarr and writes `<sample>.normalized.zarr` to `<OUTDIR>/normalized_slides/`. Reopen either slide store with WSIData. Ingested images, tissue masks, and normalized images use 2048 × 2048 pixel Zarr v3 shards with 256 × 256 pixel chunks. Use a fresh `--outdir` when replacing older, unsharded outputs.
 

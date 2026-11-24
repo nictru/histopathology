@@ -40,7 +40,7 @@ scene_arg = "${scene in [null, []] ? '' : scene.toString().toInteger()}"
 suffix = source.suffix.lower()
 if suffix == ".czi":
     reader, reader_package = "pylibczi", "pylibCZIrw"
-elif suffix in {".tif", ".tiff"}:
+elif suffix in {".tif", ".tiff", ".svs"}:
     reader, reader_package = "tiffslide", "tiffslide"
 elif suffix in {".jpg", ".jpeg"}:
     if not mpp_arg:

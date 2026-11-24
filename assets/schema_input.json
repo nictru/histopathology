@@ -17,8 +17,8 @@
                 "type": "string",
                 "format": "file-path",
                 "exists": true,
-                "pattern": "\\.(?:[tT][iI][fF]{1,2}|[jJ][pP][eE]?[gG]|[cC][zZ][iI])$",
-                "errorMessage": "Slide must be a TIFF, JPEG, or CZI file"
+                "pattern": "\\.(?:[tT][iI][fF]{1,2}|[sS][vV][sS]|[jJ][pP][eE]?[gG]|[cC][zZ][iI])$",
+                "errorMessage": "Slide must be a TIFF, SVS, JPEG, or CZI file"
             },
             "scene": {
                 "type": "integer",
@@ -29,7 +29,7 @@
             "mpp": {
                 "type": "number",
                 "exclusiveMinimum": 0,
-                "description": "Microns per pixel. Required for JPEG and optional for TIFF and CZI with calibrated metadata",
+                "description": "Microns per pixel. Required for JPEG and optional for TIFF, SVS, and CZI with calibrated metadata",
                 "meta": ["mpp"]
             }
         },
