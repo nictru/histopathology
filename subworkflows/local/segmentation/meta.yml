@@ -42,6 +42,9 @@ input:
   - models:
       type: list
       description: Selected segmentation model names.
+  - segmentation_mpp:
+      type: float
+      description: Segmentation tile resolution in microns per pixel.
   - instanseg_checkpoint:
       type: string
       description: InstanSeg checkpoint path or URL.

@@ -13,6 +13,7 @@ nextflow_workflow {
         test("Segmentation grid selection - ${mode}") {
             options "-stub-run"
             def models = mode == 'shared' ? ['cellpose', 'nulite'] : ['instanseg']
+            def target_mpp = mode == 'reuse' ? 0.9091 : 0.5
 
             when {
                 workflow {
@@ -27,14 +28,15 @@ nextflow_workflow {
                     input[1] = channel.of([meta, slide, mask])
                     input[2] = channel.of([meta, tiles])
                     input[3] = ${mode == 'retile' ? 256 : 512}
-                    input[4] = 0.5
+                    input[4] = ${target_mpp}
                     input[5] = 0.125
                     input[6] = 0.3
                     def selected_models = ${models.inspect()}
                     input[7] = selected_models
+                    input[8] = ${target_mpp}
                     ['instanseg', 'cellpose', 'nulite', 'histoplus'].eachWithIndex { model, index ->
                         def checkpoint = inputs.resolve(model + '.pt')
-                        input[8 + index] = model in selected_models ? java.nio.file.Files.createFile(checkpoint) : checkpoint
+                        input[9 + index] = model in selected_models ? java.nio.file.Files.createFile(checkpoint) : checkpoint
                     }
                     """
                 }

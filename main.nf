@@ -50,6 +50,7 @@ workflow NFCORE_HISTOPATHOLOGY {
         params.grandqc_checkpoint,
         params.grandqc_variant,
         params.segmentation_model,
+        params.segmentation_mpp,
         params.instanseg_checkpoint,
         params.cellpose_checkpoint,
         params.nulite_checkpoint,
@@ -89,7 +90,9 @@ workflow {
         params.input,
         params.help,
         params.help_full,
-        params.show_hidden
+        params.show_hidden,
+        params.segmentation_model,
+        params.segmentation_mpp,
     )
 
     //

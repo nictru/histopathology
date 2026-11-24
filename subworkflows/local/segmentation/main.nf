@@ -14,6 +14,7 @@ workflow SEGMENTATION {
     tile_overlap         // value: regular tile overlap
     background_fraction  // value: maximum background fraction
     models               // value: list of segmentation model names
+    segmentation_mpp     // value: segmentation tile resolution
     instanseg_checkpoint // value: InstanSeg checkpoint path or URL
     cellpose_checkpoint  // value: Cellpose checkpoint path or URL
     nulite_checkpoint    // value: NuLite checkpoint path or URL
@@ -22,11 +23,10 @@ workflow SEGMENTATION {
     main:
     def model_pixels = [instanseg: 512, cellpose: 256, nulite: 256, histoplus: 224]
     def selected_sizes = models.collect { m -> model_pixels[m] }.unique()
-    def segmentation_mpp = 0.5
     def segmentation_overlap = 0.125
     def regular_pixels = tile_px.toString().toInteger()
     def reuse_grid = selected_sizes.contains(regular_pixels) && tile_mpp &&
-        tile_mpp.toString().toBigDecimal() == segmentation_mpp &&
+        tile_mpp.toString().toBigDecimal() == segmentation_mpp.toString().toBigDecimal() &&
         tile_overlap.toString().toBigDecimal() == segmentation_overlap
 
     def ch_segmentation_tiles = reuse_grid

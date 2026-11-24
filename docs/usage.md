@@ -65,7 +65,7 @@ Set `--segmentation_model instanseg` to segment nuclei on stain-normalized slide
 | `nulite` | Nuclei with cell-type labels | 256 × 256 px | `--nulite_checkpoint` |
 | `histoplus` | Nuclei with cell-type labels | 224 × 224 px | `--histoplus_checkpoint` |
 
-Segmentation uses tiles at 0.5 µm/px with 12.5% overlap. Supply calibrated slides scanned at 0.5 µm/px or finer. Selected models with the same tile size share a grid. The pipeline reuses the regular grid if its size, MPP, and overlap match the model settings. For example, `--tile_px 512 --tile_mpp 0.5 --tile_overlap 0.125` shares the grid between InstanSeg and tile QC.
+Set `--segmentation_mpp` to choose the tile resolution for all selected segmentation models. The default is 0.5 µm/px with 12.5% overlap. Use a resolution compatible with each selected checkpoint and supply calibrated slides scanned at that resolution or finer. Selected models with the same tile size share a grid. The pipeline reuses the regular grid if its size, MPP, and overlap match the model settings. For example, `--tile_px 512 --tile_mpp 0.5 --tile_overlap 0.125` shares the grid between InstanSeg and tile QC at the default segmentation resolution.
 
 InstanSeg, Cellpose, and NuLite use pinned public weights by default. Use the corresponding checkpoint parameter to supply a compatible file or URL. To run HistoPLUS, pass an authorized copy of `histoplus_cellvit_segmentor_20x.pt` to `--histoplus_checkpoint`.
 

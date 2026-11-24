@@ -74,6 +74,12 @@
                     "pattern": "^(none|(instanseg|cellpose|nulite|histoplus)(, *(instanseg|cellpose|nulite|histoplus))*)$",
                     "description": "Comma-separated models for instance segmentation: instanseg, cellpose, nulite, or histoplus. Use none to skip segmentation."
                 },
+                "segmentation_mpp": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 0.5,
+                    "description": "Segmentation tile resolution in microns per pixel. Applies to all selected segmentation models."
+                },
                 "instanseg_checkpoint": {
                     "type": "string",
                     "format": "file-path",

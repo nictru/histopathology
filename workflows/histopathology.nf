@@ -36,6 +36,7 @@ workflow HISTOPATHOLOGY {
     grandqc_checkpoint
     grandqc_variant
     segmentation_model
+    segmentation_mpp
     instanseg_checkpoint
     cellpose_checkpoint
     nulite_checkpoint
@@ -90,6 +91,7 @@ workflow HISTOPATHOLOGY {
             tile_overlap,
             tile_background_fraction,
             segmentation_models,
+            segmentation_mpp,
             instanseg_checkpoint,
             cellpose_checkpoint,
             nulite_checkpoint,

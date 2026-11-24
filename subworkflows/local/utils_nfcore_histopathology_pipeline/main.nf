@@ -26,15 +26,17 @@ include { UTILS_NEXTFLOW_PIPELINE   } from '../../nf-core/utils_nextflow_pipelin
 workflow PIPELINE_INITIALISATION {
 
     take:
-    version           // boolean: Display version and exit
-    validate_params   // boolean: Boolean whether to validate parameters against the schema at runtime
-    monochrome_logs   // boolean: Do not use coloured log outputs
-    nextflow_cli_args //   array: List of positional nextflow CLI args
-    outdir            //  string: The output directory where the results will be saved
-    input             //  string: Path to input samplesheet
-    help              // boolean: Display help message and exit
-    help_full         // boolean: Show the full help message
-    show_hidden       // boolean: Show hidden parameters in the help message
+    version            // boolean: Display version and exit
+    validate_params    // boolean: Boolean whether to validate parameters against the schema at runtime
+    monochrome_logs    // boolean: Do not use coloured log outputs
+    nextflow_cli_args  //   array: List of positional nextflow CLI args
+    outdir             //  string: The output directory where the results will be saved
+    input              //  string: Path to input samplesheet
+    help               // boolean: Display help message and exit
+    help_full          // boolean: Show the full help message
+    show_hidden        // boolean: Show hidden parameters in the help message
+    segmentation_model // string: Selected segmentation models, or 'none'
+    segmentation_mpp   //  number: Segmentation tile resolution in microns per pixel
 
     main:
 
@@ -107,6 +109,21 @@ workflow PIPELINE_INITIALISATION {
     def duplicate = slides.countBy { row -> row[0].id }.find { _id, count -> count > 1 }
     if (duplicate) {
         error("Duplicate sample ID in the slide samplesheet: ${duplicate.key}")
+    }
+    if (segmentation_model && segmentation_model != 'none') {
+        def target_mpp = segmentation_mpp.toString().toBigDecimal()
+        def incompatible = slides
+            .collect { row -> row[0] }
+            .findAll { meta ->
+                meta.mpp !in [null, []] && meta.mpp.toString().toBigDecimal() > target_mpp
+            }
+        if (incompatible) {
+            def samples = incompatible.collect { meta -> "  - ${meta.id} (${meta.mpp} µm/px)" }
+            error(
+                "Segmentation requires slides at ${target_mpp} µm/px or finer. These samples would require upsampling:\n" +
+                "${samples.join('\n')}\nUse higher-resolution slides, choose a compatible --segmentation_mpp, or set --segmentation_model none."
+            )
+        }
     }
     def ch_samplesheet = channel.fromList(slides)
         .map { row -> validateInputSamplesheet(row) }
