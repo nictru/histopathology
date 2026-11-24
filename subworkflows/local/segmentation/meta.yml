@@ -8,6 +8,7 @@ keywords:
 components:
   - lazyslide/cells
   - lazyslide/tiletissues
+  - spatialdata/segmentationagreement
 input:
   - ch_slides:
       type: file
@@ -18,8 +19,8 @@ input:
   - ch_slides_with_masks:
       type: file
       description: |
-        Ingested slides with aligned tissue masks for building segmentation grids.
-        Structure: [ val(meta), path(slide), path(tissue_mask) ]
+        Original ingested slides for previews, with aligned tissue masks for building segmentation grids.
+        Structure: [ val(meta), path(original), path(tissue_mask) ]
       pattern: "*.zarr"
   - ch_tiles:
       type: file
@@ -52,6 +53,12 @@ output:
         SpatialData stores with segmentation polygons and provenance.
         Structure: [ val(meta), path(instances) ]
       pattern: "*.cells.zarr"
+  - agreement:
+      type: file
+      description: |
+        Per-slide agreement scores when two or more methods run.
+        Structure: [ val(meta), path(agreement_csv) ]
+      pattern: "*.segmentation_agreement.csv"
   - multiqc_files:
       type: file
       description: Per-module MultiQC custom content.

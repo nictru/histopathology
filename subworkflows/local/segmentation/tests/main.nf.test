@@ -8,6 +8,7 @@ nextflow_workflow {
     tag "subworkflows/segmentation"
     tag "lazyslide/cells"
     tag "lazyslide/tiletissues"
+    tag "spatialdata/segmentationagreement"
 
     ["reuse", "retile", "shared", "mixed"].each { mode ->
         test("Segmentation grid selection - ${mode}") {
@@ -47,8 +48,8 @@ nextflow_workflow {
                 def expected = [
                     reuse: ['LAZYSLIDE_CELLS'],
                     retile: ['LAZYSLIDE_CELLS', 'SEGMENTATION_TILETISSUES'],
-                    shared: ['LAZYSLIDE_CELLS', 'LAZYSLIDE_CELLS', 'SEGMENTATION_TILETISSUES'],
-                    mixed: ['LAZYSLIDE_CELLS'] * 8 + ['SEGMENTATION_TILETISSUES'] * 4,
+                    shared: ['LAZYSLIDE_CELLS', 'LAZYSLIDE_CELLS', 'SEGMENTATION_TILETISSUES', 'SPATIALDATA_SEGMENTATIONAGREEMENT'],
+                    mixed: ['LAZYSLIDE_CELLS'] * 8 + ['SEGMENTATION_TILETISSUES'] * 4 + ['SPATIALDATA_SEGMENTATIONAGREEMENT'] * 2,
                 ]
                 assert tasks == expected[mode]
                 def results = workflow.out.cells.collect { meta, store ->
@@ -56,8 +57,15 @@ nextflow_workflow {
                 }
                 def expected_results = samples.collectMany { id -> models.collect { model -> [id, id + '.' + model + '.cells.zarr'] } }
                 assert results.sort { it[1] } == expected_results.sort { it[1] }
+                def agreement = workflow.out.agreement.collect { meta, file ->
+                    [meta.id, path(file).fileName.toString()]
+                }.sort { it[0] }
+                def compared_samples = models.size() > 1 ? samples : []
+                assert agreement == compared_samples.collect { [it, it + '.segmentation_agreement.csv'] }
                 def previews = workflow.out.multiqc_files.collect { path(it).fileName.toString() }.sort()
-                assert previews == expected_results.collect { it[1].replace('.zarr', '_mqc.json') }.sort()
+                def expected_previews = expected_results.collect { it[1].replace('.zarr', '_mqc.json') }
+                expected_previews += compared_samples.collect { it + '.segmentation_agreement_mqc.json' }
+                assert previews == expected_previews.sort()
                 if (mode in ['reuse', 'retile']) {
                     assert snapshot(results).match()
                 }

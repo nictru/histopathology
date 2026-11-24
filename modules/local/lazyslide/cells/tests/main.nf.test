@@ -24,7 +24,16 @@ nextflow_process {
                     graphics.fillRect(0, 0, image.width, image.height)
                     graphics.dispose()
                     assert javax.imageio.ImageIO.write(image, 'tiff', blank.toFile())
-                    input[0] = channel.of([[id: 'tissue'], tissue, [], 0.5], [[id: 'blank'], blank, [], 0.5])
+
+                    def original = java.nio.file.Files.createTempFile('original-slide', '.tif')
+                    def original_image = new java.awt.image.BufferedImage(1380, 1484, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                    def original_graphics = original_image.createGraphics()
+                    original_graphics.setColor(new java.awt.Color(30, 190, 70))
+                    original_graphics.fillRect(0, 0, original_image.width, original_image.height)
+                    original_graphics.dispose()
+                    assert javax.imageio.ImageIO.write(original_image, 'tiff', original.toFile())
+
+                    input[0] = channel.of([[id: 'tissue'], tissue, [], 0.5], [[id: 'blank'], blank, [], 0.5], [[id: 'original'], original, [], 0.5])
                     """
                 }
             }
@@ -32,7 +41,7 @@ nextflow_process {
                 script "../../findtissues/main.nf"
                 process {
                     """
-                    input[0] = WSIDATA_INGEST.out.slide
+                    input[0] = WSIDATA_INGEST.out.slide.filter { meta, slide -> meta.id != 'original' }
                     """
                 }
             }
@@ -40,7 +49,7 @@ nextflow_process {
                 script "../../tiletissues/main.nf"
                 process {
                     """
-                    input[0] = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask)
+                    input[0] = WSIDATA_INGEST.out.slide.filter { meta, slide -> meta.id != 'original' }.join(LAZYSLIDE_FINDTISSUES.out.mask)
                     input[1] = 512
                     input[2] = 0.5
                     input[3] = 0.125
@@ -54,8 +63,9 @@ nextflow_process {
             process {
                 """
                 def tiles = LAZYSLIDE_TILETISSUES.out.tiles.map { meta, store, _pixels -> [meta, store] }
-                input[0] = WSIDATA_INGEST.out.slide.join(tiles).map { meta, slide, grid ->
-                    [meta, slide, grid, 'instanseg']
+                def ch_original = WSIDATA_INGEST.out.slide.filter { meta, slide -> meta.id == 'original' }.map { meta, slide -> slide }
+                input[0] = WSIDATA_INGEST.out.slide.filter { meta, slide -> meta.id != 'original' }.join(tiles).combine(ch_original).map { meta, slide, grid, raw ->
+                    [meta, slide, meta.id == 'tissue' ? raw : slide, grid, 'instanseg']
                 }
                 """
             }
@@ -67,6 +77,15 @@ nextflow_process {
             assert previews*.section_name == ['blank · instanseg', 'tissue · instanseg']
             assert previews*.parent_id.unique() == ['histopathology_segmentation']
             assert previews*.plot_type == ['html', 'image']
+            def image_data = (previews[1].data =~ /data:image\/jpeg;base64,([^"]+)/)
+            assert image_data.find()
+            def image = javax.imageio.ImageIO.read(new ByteArrayInputStream(image_data.group(1).decodeBase64()))
+            def colors = (1..19).collectMany { x ->
+                (1..19).collect { y -> new java.awt.Color(image.getRGB((image.width * x).intdiv(20), (image.height * y).intdiv(20))) }
+            }
+            assert colors.any { Math.abs(it.red - 30) < 6 && Math.abs(it.green - 190) < 6 && Math.abs(it.blue - 70) < 6 }
+            assert colors.any { it.green in 108..178 && it.blue in 75..160 }
+
             def results = process.out.cells.sort { it[0].id }.collect { meta, store ->
                 def attrs = path(path(store).resolve('zarr.json').toString()).json.attributes.segmentation
                 assert attrs.model == 'instanseg'

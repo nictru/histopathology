@@ -15,6 +15,7 @@ import numpy as np
 import zarr
 from dask_image.ndinterp import affine_transform
 from lazyslide import open_wsi, pp
+from matplotlib.colors import ListedColormap
 from matplotlib.figure import Figure
 from rasterio.features import rasterize
 from spatialdata import SpatialData, read_zarr
@@ -159,20 +160,23 @@ with dask.config.set(scheduler="threads", num_workers=int("${task.cpus}")):
     zarr.consolidate_metadata(root.store)
 
 step = ceil(max(mask.shape) / REPORT_EDGE)
-figure = Figure(figsize=(9, 4.5), layout="constrained")
-original_ax, mask_ax = figure.subplots(1, 2)
-original_ax.imshow(preview[:, ::step, ::step].transpose(1, 2, 0))
-mask_ax.imshow(
-    mask[::step, ::step], cmap="gray", vmin=0, vmax=1, interpolation="nearest"
+figure = Figure(figsize=(6, 5), layout="constrained")
+ax = figure.subplots()
+ax.imshow(preview[:, ::step, ::step].transpose(1, 2, 0), interpolation="nearest")
+ax.imshow(
+    mask[::step, ::step],
+    cmap=ListedColormap(["none", "#22a699"]),
+    vmin=0,
+    vmax=1,
+    alpha=0.4,
+    interpolation="nearest",
 )
-for ax, title in ((original_ax, "Original"), (mask_ax, "Tissue mask")):
-    ax.set_title(title)
-    ax.set_axis_off()
+ax.set_axis_off()
 write_multiqc(
     "${prefix}.tissue_mqc.json",
     kind="tissue",
     section="Tissue masks",
-    description="Binary tissue masks used to select tiles.",
+    description="Tissue masks used to select tiles, overlaid on the original slides.",
     sample="${meta.id}",
     figure=figure,
     note="" if mask.any() else "No tissue detected.",

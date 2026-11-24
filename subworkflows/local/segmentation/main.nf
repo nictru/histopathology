@@ -1,10 +1,11 @@
-include { LAZYSLIDE_CELLS                                        } from '../../../modules/local/lazyslide/cells/main'
-include { LAZYSLIDE_TILETISSUES as SEGMENTATION_TILETISSUES      } from '../../../modules/local/lazyslide/tiletissues/main'
+include { LAZYSLIDE_CELLS                                   } from '../../../modules/local/lazyslide/cells/main'
+include { LAZYSLIDE_TILETISSUES as SEGMENTATION_TILETISSUES } from '../../../modules/local/lazyslide/tiletissues/main'
+include { SPATIALDATA_SEGMENTATIONAGREEMENT                 } from '../../../modules/local/spatialdata/segmentationagreement/main'
 
 workflow SEGMENTATION {
     take:
     ch_slides            // channel: [ val(meta), path(slide) ]
-    ch_slides_with_masks // channel: [ val(meta), path(slide), path(tissue_mask) ]
+    ch_slides_with_masks // channel: [ val(meta), path(original), path(tissue_mask) ]
     ch_tiles             // channel: [ val(meta), path(tiles) ]
     tile_px              // value: regular tile width in pixels
     tile_mpp             // value: regular tile resolution
@@ -37,15 +38,29 @@ workflow SEGMENTATION {
 
     def ch_models = channel.fromList(selected_models).map { model -> tuple(tile_sizes[model], model) }
 
+    def ch_originals = ch_slides_with_masks.map { meta, original, _mask -> tuple(meta, original) }
     def ch_grids = ch_slides
+        .join(ch_originals)
         .combine(ch_segmentation_tiles, by: 0)
-        .map { meta, slide, tiles, pixels -> tuple(pixels, meta, slide, tiles) }
+        .map { meta, slide, original, tiles, pixels -> tuple(pixels, meta, slide, original, tiles) }
     def ch_inputs = ch_grids
         .combine(ch_models, by: 0)
-        .map { _pixels, meta, slide, tiles, model -> tuple(meta, slide, tiles, model) }
+        .map { _pixels, meta, slide, original, tiles, model -> tuple(meta, slide, original, tiles, model) }
     LAZYSLIDE_CELLS(ch_inputs)
 
+    def ch_agreement = channel.empty()
+    def ch_multiqc_files = LAZYSLIDE_CELLS.out.multiqc_files
+    if (selected_models.size() > 1) {
+        def ch_segmentations = LAZYSLIDE_CELLS.out.cells
+            .groupTuple(size: selected_models.size())
+            .map { meta, stores -> tuple(meta, stores.sort { store -> store.name }) }
+        SPATIALDATA_SEGMENTATIONAGREEMENT(ch_segmentations)
+        ch_agreement = SPATIALDATA_SEGMENTATIONAGREEMENT.out.agreement
+        ch_multiqc_files = ch_multiqc_files.mix(SPATIALDATA_SEGMENTATIONAGREEMENT.out.multiqc_files)
+    }
+
     emit:
-    cells = LAZYSLIDE_CELLS.out.cells // channel: [ val(meta), path(instances) ]
-    multiqc_files = LAZYSLIDE_CELLS.out.multiqc_files // channel: [ path(multiqc_file) ]
+    cells         = LAZYSLIDE_CELLS.out.cells // channel: [ val(meta), path(instances) ]
+    agreement     = ch_agreement              // channel: [ val(meta), path(agreement_csv) ]
+    multiqc_files = ch_multiqc_files          // channel: [ path(multiqc_file) ]
 }

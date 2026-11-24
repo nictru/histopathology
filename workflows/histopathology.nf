@@ -74,6 +74,7 @@ workflow HISTOPATHOLOGY {
         ? []
         : segmentation_model.split(',', -1).collect { it.trim() }.unique()
     def ch_cells = channel.empty()
+    def ch_segmentation_agreement = channel.empty()
     if (segmentation_models) {
         def unsupported_models = segmentation_models - ['instanseg', 'cellpose', 'nulite', 'histoplus']
         if (unsupported_models) {
@@ -91,6 +92,7 @@ workflow HISTOPATHOLOGY {
             segmentation_mpp,
         )
         ch_cells = SEGMENTATION.out.cells
+        ch_segmentation_agreement = SEGMENTATION.out.agreement
         ch_multiqc_files = ch_multiqc_files.mix(SEGMENTATION.out.multiqc_files)
     }
 
@@ -181,6 +183,7 @@ workflow HISTOPATHOLOGY {
     tile_qc           = QC.out.tile_qc                                            // channel: [ val(meta), path(scored_tiles) ]
     slide_qc          = QC.out.slide_qc                                           // channel: [ val(meta), path(artifacts) ]
     cells             = ch_cells                                                  // channel: [ val(meta), path(instances) ]
+    segmentation_agreement = ch_segmentation_agreement                            // channel: [ val(meta), path(agreement_csv) ]
     embeddings        = ch_embeddings                                             // channel: [ val(meta), path(embedding_store) ]
     multiqc_report    = MULTIQC.out.report.map { _meta, report -> [report] }.toList() // channel: /path/to/multiqc_report.html
     versions          = ch_versions                                              // channel: [ path(versions.yml) ]

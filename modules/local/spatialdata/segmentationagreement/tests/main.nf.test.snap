@@ -1,0 +1,22 @@
+{
+    "Compare identical and empty segmentations": {
+        "content": [
+            {
+                "cellpose/cellpose": "",
+                "cellpose/instanseg": "0.0",
+                "cellpose/nulite": "0.0",
+                "instanseg/cellpose": "0.0",
+                "instanseg/instanseg": "1.0",
+                "instanseg/nulite": "1.0",
+                "nulite/cellpose": "0.0",
+                "nulite/instanseg": "1.0",
+                "nulite/nulite": "1.0"
+            }
+        ],
+        "timestamp": "2026-11-24T20:07:05.510827",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

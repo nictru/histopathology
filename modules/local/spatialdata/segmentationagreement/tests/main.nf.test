@@ -1,0 +1,127 @@
+nextflow_process {
+    name "Test SPATIALDATA_SEGMENTATIONAGREEMENT"
+    script "../main.nf"
+    process "SPATIALDATA_SEGMENTATIONAGREEMENT"
+
+    tag "modules"
+    tag "modules_local"
+    tag "spatialdata/segmentationagreement"
+    tag "wsidata/ingest"
+    tag "lazyslide/findtissues"
+    tag "lazyslide/tiletissues"
+    tag "lazyslide/cells"
+
+    test("Compare identical and empty segmentations") {
+        setup {
+            run("WSIDATA_INGEST") {
+                script "../../../wsidata/ingest/main.nf"
+                process {
+                    """
+                    def tissue = file('https://raw.githubusercontent.com/instanseg/instanseg/414fbc9e8039c1d049cc27871d66409084ded21c/instanseg/examples/HE_example.tif', checkIfExists: true)
+                    input[0] = channel.of([[id: 'sample'], tissue, [], 0.5])
+                    """
+                }
+            }
+            run("LAZYSLIDE_FINDTISSUES") {
+                script "../../../lazyslide/findtissues/main.nf"
+                process {
+                    """
+                    input[0] = WSIDATA_INGEST.out.slide
+                    """
+                }
+            }
+            run("LAZYSLIDE_TILETISSUES") {
+                script "../../../lazyslide/tiletissues/main.nf"
+                process {
+                    """
+                    input[0] = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask)
+                    input[1] = 512
+                    input[2] = 0.5
+                    input[3] = 0.125
+                    input[4] = 0.3
+                    """
+                }
+            }
+            run("LAZYSLIDE_CELLS") {
+                script "../../../lazyslide/cells/main.nf"
+                process {
+                    """
+                    def tiles = LAZYSLIDE_TILETISSUES.out.tiles.map { meta, store, _pixels -> [meta, store] }
+                    input[0] = WSIDATA_INGEST.out.slide.join(tiles).map { meta, slide, grid ->
+                        [meta, slide, slide, grid, 'instanseg']
+                    }
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = LAZYSLIDE_CELLS.out.cells.map { meta, store ->
+                    def inputs = java.nio.file.Files.createTempDirectory('segmentation-agreement')
+                    def copy = inputs.resolve('sample.nulite.cells.zarr')
+                    java.nio.file.Files.walk(store).withCloseable { paths ->
+                        paths.forEach { source ->
+                            def destination = copy.resolve(store.relativize(source).toString())
+                            if (java.nio.file.Files.isDirectory(source)) {
+                                java.nio.file.Files.createDirectories(destination)
+                            } else {
+                                java.nio.file.Files.copy(source, destination)
+                            }
+                        }
+                    }
+                    def metadata = new groovy.json.JsonSlurper().parse(copy.resolve('zarr.json').toFile())
+                    metadata.attributes.segmentation.model = 'nulite'
+                    java.nio.file.Files.writeString(copy.resolve('zarr.json'), groovy.json.JsonOutput.toJson(metadata))
+
+                    def empty = java.nio.file.Files.createDirectory(inputs.resolve('sample.cellpose.cells.zarr'))
+                    def empty_metadata = [
+                        zarr_format: 3,
+                        node_type: 'group',
+                        attributes: [
+                            spatialdata_attrs: metadata.attributes.spatialdata_attrs,
+                            segmentation: [model: 'cellpose', instance_count: 0],
+                        ],
+                    ]
+                    java.nio.file.Files.writeString(empty.resolve('zarr.json'), groovy.json.JsonOutput.toJson(empty_metadata))
+                    [meta, [store, copy, empty]]
+                }
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def lines = path(process.out.agreement[0][1]).readLines()
+            def header = lines.first().split(',').toList()
+            def rows = lines.drop(1).collectEntries { line ->
+                def fields = [header, line.split(',', -1).toList()].transpose().collectEntries()
+                [(fields.reference + '/' + fields.comparison): fields]
+            }
+            assert rows.size() == 9
+
+            def identical = rows['instanseg/nulite']
+            assert identical.reference_instances.toInteger() > 0
+            assert identical.reference_instances == identical.comparison_instances
+            assert identical.matched_instances == identical.reference_instances
+            assert identical.iou_threshold.toDouble() == 0.5
+            def metrics = ['foreground_dice', 'foreground_iou', 'instance_f1', 'mean_matched_iou', 'precision', 'recall']
+            assert metrics.every { Math.abs(identical[it].toDouble() - 1.0) < 1e-10 }
+            assert rows['instanseg/cellpose'].instance_f1.toDouble() == 0.0
+            assert rows['instanseg/cellpose'].precision == ''
+            assert rows['cellpose/instanseg'].precision.toDouble() == 0.0
+            assert rows['instanseg/cellpose'].mean_matched_iou == ''
+            assert rows['cellpose/cellpose'].foreground_iou == ''
+            assert rows['cellpose/cellpose'].instance_f1 == ''
+
+            def preview = path(process.out.multiqc_files[0]).json
+            assert preview.parent_id == 'histopathology_segmentation_agreement'
+            assert preview.plot_type == 'html'
+            assert preview.data.count('data-bs-toggle="tab"') == metrics.size()
+            assert preview.data.count('data:image/png;base64,') == metrics.size()
+            assert preview.data.count('aria-selected="true"') == 1
+            assert snapshot(rows.collectEntries { pair, fields -> [(pair): fields.instance_f1] }).match()
+        }
+    }
+}

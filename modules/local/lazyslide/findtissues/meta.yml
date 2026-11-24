@@ -31,7 +31,7 @@ output:
   multiqc_files:
     - "${prefix}.tissue_mqc.json":
         type: file
-        description: Binary tissue mask preview.
+        description: Tissue mask overlay on the original slide.
         pattern: "*_mqc.json"
   versions:
     - versions.yml:

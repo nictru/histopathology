@@ -17,7 +17,11 @@ input:
         description: Sample metadata containing the slide ID.
     - slide:
         type: directory
-        description: WSIData store with the RGB image under the wsi key.
+        description: WSIData store with the RGB image used for segmentation under the wsi key.
+        pattern: "*.zarr"
+    - original:
+        type: directory
+        description: Original WSIData store used as the background for the segmentation preview.
         pattern: "*.zarr"
     - tiles:
         type: directory
@@ -39,7 +43,7 @@ output:
   multiqc_files:
     - "${prefix}.${model}.cells_mqc.json":
         type: file
-        description: Zoomed instance mask preview.
+        description: Instance mask overlay on a crop from the original slide.
         pattern: "*_mqc.json"
   versions:
     - versions.yml:

@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
+name: spatialdata_segmentationagreement
+description: Compare whole-slide segmentations by foreground overlap and one-to-one instance matching.
+keywords:
+  - histology
+  - cell segmentation
+  - agreement
+tools:
+  - spatialdata:
+      description: A storage format and processing library for spatial omics data.
+      homepage: https://spatialdata.scverse.org/
+      documentation: https://spatialdata.scverse.org/en/stable/
+      licence: ["BSD-3-Clause"]
+  - shapely:
+      description: Manipulate and analyze planar geometric objects.
+      homepage: https://shapely.readthedocs.io/
+      licence: ["BSD-3-Clause"]
+  - scipy:
+      description: Scientific computing algorithms for Python.
+      homepage: https://scipy.org/
+      licence: ["BSD-3-Clause"]
+input:
+  - - meta:
+        type: map
+        description: Slide metadata with the sample identifier.
+    - segmentations:
+        type: directory
+        description: Two or more SpatialData stores with cell or nucleus shapes for the same slide.
+        pattern: "*.cells.zarr"
+output:
+  agreement:
+    - - meta:
+          type: map
+          description: Slide metadata with the sample identifier.
+      - "${prefix}.segmentation_agreement.csv":
+          type: file
+          description: Foreground and instance agreement scores for all ordered pairs of methods.
+          pattern: "*.segmentation_agreement.csv"
+  multiqc_files:
+    - "${prefix}.segmentation_agreement_mqc.json":
+        type: file
+        description: Tabbed heatmaps of pairwise agreement metrics.
+        pattern: "*_mqc.json"
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+topics:
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/arm64:
+      name: community.wave.seqera.io/library/pip_python_matplotlib_numpy_pruned:d120b8172d318a56
+      build_id: bd-d120b8172d318a56_1
+      scan_id: sc-ebd55ad836f8e2db_1
+    linux/amd64:
+      name: community.wave.seqera.io/library/pip_python_matplotlib_numpy_pruned:f47cf1913b2b3195
+      build_id: bd-f47cf1913b2b3195_1
+      scan_id: sc-aaba73123ef45a74_1
+  singularity:
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/pip_python_matplotlib_numpy_pruned:dedf438fa0e18648
+      build_id: bd-dedf438fa0e18648_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/47/47717b7764e33e509c321074e5d3a06d841722a5fea34494510ee7bc7ef88c5c/data
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/pip_python_matplotlib_numpy_pruned:6cbc0c18a9a63ed2
+      build_id: bd-6cbc0c18a9a63ed2_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/2b/2bacc7afedd39aabce34809c9dc500768099afb82dc345d800eb1400206e703c/data
+  conda:
+    linux/arm64:
+      lock_file: modules/local/spatialdata/segmentationagreement/.conda-lock/linux_arm64-bd-d120b8172d318a56_1.txt
+    linux/amd64:
+      lock_file: modules/local/spatialdata/segmentationagreement/.conda-lock/linux_amd64-bd-f47cf1913b2b3195_1.txt

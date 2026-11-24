@@ -32,15 +32,26 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 
 [MultiQC](http://multiqc.info) is a visualization tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in the report data directory.
 
-The report includes five views for each slide.
+The report includes these views for each slide.
 
-- **Tissue masks** show the original slide beside the binary tissue mask used to select tiles.
+- **Tissue masks** show a semi-transparent overlay of the detected tissue on the original slide.
 - **Slide QC** overlays GrandQC artifact classes on the original slide.
 - **Tile QC** displays spatial score maps for the image metrics, FocusLiteNN, and PathProfilerQC. Each map uses its observed score range and averages scores where tiles overlap.
 - **Stain normalization** shows matching original and normalized slide thumbnails when normalization runs.
-- **Segmentation masks** show a detail crop and its cell or nucleus instance mask for each selected model. Each crop centers on a detected instance in the slide passed to that model.
+- **Segmentation masks** show semi-transparent cell or nucleus masks on a crop of the original slide for each selected model. Each crop centers on a detected instance.
+- **Segmentation agreement** appears when two or more segmentation methods run. Switch metric tabs to compare methods on a fixed 0–1 scale. Each heatmap uses the same hierarchical order, based on instance F1. The dendrogram groups methods with detections, and methods without detections appear after them.
 
 The report embeds thumbnails and detail crops. Use the corresponding Zarr outputs for full-resolution images, masks, geometries, and tile scores.
+
+### Segmentation agreement
+
+Find per-slide scores in `segmentation/<sample>.segmentation_agreement.csv`. The CSV records both directions of each comparison, self-comparisons, instance counts, and the number of matches.
+
+- **Foreground Dice and IoU** compare the areas covered by each method's polygons on the slide.
+- **Instance F1, precision, and recall** count one-to-one matches with polygon IoU of at least 0.5. Matching maximizes the number of eligible pairs first and then their summed IoU. Rows are the reference methods and columns are the comparison methods.
+- **Mean matched IoU** averages the IoUs of the accepted pairs.
+
+Undefined scores appear as dashes in the heatmaps and empty fields in the CSV.
 
 ### Pipeline information
 

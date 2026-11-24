@@ -100,17 +100,25 @@ def plot_instances(wsi, shapes):
     )
     instances = shapes.iloc[indices].assign(preview_color=np.arange(len(indices)) % 20)
 
-    figure = Figure(figsize=(9, 4.5), layout="constrained")
-    original, mask = figure.subplots(1, 2)
-    original.imshow(wsi.reader.get_region(x, y, width, height), interpolation="nearest")
-    instances.plot(
-        ax=mask, column="preview_color", cmap="tab20", vmin=0, vmax=19, linewidth=0
+    figure = Figure(figsize=(5, 5), layout="constrained")
+    ax = figure.subplots()
+    ax.imshow(
+        wsi.reader.get_region(x, y, width, height),
+        extent=(x, x + width, y + height, y),
+        origin="upper",
+        interpolation="nearest",
     )
-    mask.set_xlim(x, x + width)
-    mask.set_ylim(y + height, y)
-    for ax, title in ((original, "Slide detail"), (mask, "Instance mask")):
-        ax.set_title(title)
-        ax.set_axis_off()
+    instances.plot(
+        ax=ax,
+        column="preview_color",
+        cmap="tab20",
+        vmin=0,
+        vmax=19,
+        linewidth=0,
+        alpha=0.45,
+    )
+    ax.set(xlim=(x, x + width), ylim=(y + height, y))
+    ax.set_axis_off()
     return (
         figure,
         f"{len(shapes):,} instances slide-wide. Crop origin: x={x:,}, y={y:,} (level 0 pixels).",
@@ -164,12 +172,13 @@ SpatialData(shapes=shapes, attrs={"segmentation": segmentation}).write(
 instances = shapes.get(shape_key)
 figure, note = (None, "No instances detected.")
 if instances is not None and not instances.empty:
-    figure, note = plot_instances(wsi, instances)
+    original = open_wsi(read_zarr("original.zarr"), image_key="wsi")
+    figure, note = plot_instances(original, instances)
 write_multiqc(
     "${prefix}.${model}.cells_mqc.json",
     kind="segmentation",
     section="Segmentation masks",
-    description="Detail crops from the slide used for inference, with filled instance masks.",
+    description="Cell or nucleus masks overlaid on detail crops from the original slides.",
     sample="${meta.id}" + f" · {name}",
     figure=figure,
     note=note,

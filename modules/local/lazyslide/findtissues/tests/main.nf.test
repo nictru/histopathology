@@ -52,6 +52,16 @@ nextflow_process {
                 assert preview.data.contains('data:image/jpeg;base64,')
                 assert preview.data.contains('No tissue detected.') == (preview.section_name == 'blank')
             }
+            def image_data = (previews[1].data =~ /data:image\/jpeg;base64,([^"]+)/)
+            assert image_data.find()
+            def image = javax.imageio.ImageIO.read(new ByteArrayInputStream(image_data.group(1).decodeBase64()))
+            def center = new java.awt.Color(image.getRGB(image.width.intdiv(2), image.height.intdiv(2)))
+            def background = new java.awt.Color(image.getRGB(image.width.intdiv(10), image.height.intdiv(10)))
+            assert Math.abs(center.red - 125) < 10
+            assert Math.abs(center.green - 120) < 10
+            assert Math.abs(center.blue - 157) < 10
+            assert [background.red, background.green, background.blue].every { it > 245 }
+
             def results = process.out.mask.sort { it[0].id }.collect { meta, mask ->
                 assert path(mask).fileName.toString() == "${meta.id}.tissue.zarr"
                 def root = path(path(mask).resolve('zarr.json').toString()).json
