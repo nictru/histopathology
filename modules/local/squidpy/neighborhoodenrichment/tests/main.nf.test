@@ -1,0 +1,37 @@
+nextflow_process {
+    name "Test SQUIDPY_NEIGHBORHOODENRICHMENT"
+    script "../main.nf"
+    process "SQUIDPY_NEIGHBORHOODENRICHMENT"
+
+    tag "modules"
+    tag "modules_local"
+    tag "squidpy/neighborhoodenrichment"
+
+    test("Emit separate neighborhood results for native and CytoFormer classes") {
+        options "-stub-run"
+
+        when {
+            process {
+                """
+                def root = java.nio.file.Files.createTempDirectory('neighborhood-inputs')
+                def slide = java.nio.file.Files.createDirectory(root.resolve('sample.zarr'))
+                def sources = ['sample.classpose.cells.zarr', 'sample.classpose.cytoformer.zarr']
+                input[0] = channel.fromList(sources.collect { name ->
+                    [[id: 'sample'], java.nio.file.Files.createDirectory(root.resolve(name)), slide]
+                })
+                input[1] = 30.0
+                input[2] = 32
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def csvs = process.out.neighborhoods.collect { meta, csv -> [meta.id, path(csv).fileName.toString()] }.sort { it[1] }
+            def plots = process.out.multiqc_files.collect { path(it).fileName.toString() }.sort()
+            assert csvs.size() == 2
+            assert plots.size() == 2
+            assert snapshot(csvs, plots).match()
+        }
+    }
+}

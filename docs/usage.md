@@ -82,6 +82,14 @@ Set `--cytoformer_organ` to classify the instances produced by each selected seg
 
 Request access on Hugging Face and set the `HF_TOKEN` Nextflow secret to a read token with access. By default, each task with detected instances downloads the 2.7 GB checkpoint. Set `HF_HOME` to a shared cache visible and writable from the tasks to reuse the download. Add the `gpu` profile for CUDA inference. [CytoFormer checkpoint](https://huggingface.co/zhihuanglab/CytoFormer)
 
+### Cell-type neighborhoods
+
+Set `--cell_neighborhood_radius_um` to enable Squidpy neighborhood enrichment for each slide and model. For example, `--segmentation_model classpose --cell_neighborhood_radius_um 30` connects classified instances whose centroids are within 30 µm. Choose a radius that matches the spatial scale of your analysis. CytoFormer predictions, when enabled, produce a separate result for each source segmenter.
+
+Squidpy shuffles the predicted labels across the fixed graph. Set `--cell_neighborhood_permutations` to change the default of 1,000 shuffles.
+
+The prebuilt neighborhood container targets AMD64. The module also provides a locked ARM64 environment.
+
 ## Tile embeddings
 
 Set `--embedding_model resnet50` to generate one feature vector per tissue tile. To run several encoders, pass a comma-separated list such as `--embedding_model uni,uni2,gigapath-flash`. Embedding extraction is disabled by default and can run independently of cell segmentation.

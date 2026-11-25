@@ -1,0 +1,76 @@
+name: squidpy_neighborhoodenrichment
+description: Measure spatial neighborhood enrichment between predicted cell types.
+keywords:
+  - histology
+  - cell types
+  - spatial neighborhoods
+tools:
+  - squidpy:
+      description: A framework for spatial omics analysis.
+      homepage: https://squidpy.readthedocs.io/
+      documentation: https://squidpy.readthedocs.io/en/latest/modules/gr.html
+      doi: 10.1038/s41592-021-01358-2
+      licence: ["BSD-3-Clause"]
+input:
+  - - meta:
+        type: map
+        description: Slide metadata with the sample identifier.
+    - instances:
+        type: directory
+        description: Cell or nucleus polygons and predicted class labels where available.
+        pattern: "*.zarr"
+    - slide:
+        type: directory
+        description: Original calibrated slide store.
+        pattern: "*.zarr"
+  - radius_um:
+      type: float
+      description: Maximum centroid distance in microns.
+  - permutations:
+      type: integer
+      description: Number of label permutations for the null distribution.
+output:
+  neighborhoods:
+    - - meta:
+          type: map
+          description: Slide metadata with the sample identifier.
+      - "${prefix}.cell_neighborhoods.csv":
+          type: file
+          description: Per-class pairs with the number of observed edges and neighborhood enrichment z-scores.
+          pattern: "*.cell_neighborhoods.csv"
+  multiqc_files:
+    - "${prefix}.cell_neighborhoods_mqc.json":
+        type: file
+        description: Native heatmap of neighborhood enrichment z-scores when a graph is available.
+        pattern: "*_mqc.json"
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+topics:
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/amd64:
+      name: community.wave.seqera.io/library/mahotas_numpy_pip_python_pruned:019535063c082f89
+      build_id: bd-019535063c082f89_1
+      scan_id: sc-cd9223c965f59c1a_1
+  singularity:
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/mahotas_numpy_pip_python_pruned:d55e60cef94e8f25
+      build_id: bd-d55e60cef94e8f25_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/c9/c9b8278f294041a770b0fbc68b12dc380f5224ea88ddb25f5645ec998c523277/data
+  conda:
+    linux/amd64:
+      lock_file: modules/local/squidpy/neighborhoodenrichment/.conda-lock/linux_amd64-bd-019535063c082f89_1.txt
+    linux/arm64:
+      lock_file: modules/local/squidpy/neighborhoodenrichment/.conda-lock/linux_arm64-pixi.txt

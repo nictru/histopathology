@@ -41,6 +41,7 @@ The report includes these views for each slide.
 - **Segmentation masks** show semi-transparent cell or nucleus masks on a crop of the original slide for each selected model. Each crop centers on a detected instance.
 - **Cell type segmentation** shows the same crop with instances colored by predicted class when the model returns cell-type labels.
 - **Cell-type composition and density** shows a sortable metrics table and stacked bars of class proportions for each slide and model.
+- **Cell-type neighborhood enrichment** shows one heatmap per slide and model when neighborhood analysis returns defined scores.
 - **CytoFormer previews** appear in **Cell type segmentation** when `--cytoformer_organ` is set. Each preview identifies the source segmenter and organ head.
 - **Segmentation agreement** appears when two or more segmentation methods run. Switch metric tabs to compare methods on a fixed 0–1 scale. Each heatmap uses the same hierarchical order, based on instance F1. The dendrogram groups methods with detections, and methods without detections appear after them.
 
@@ -55,6 +56,12 @@ Find the classified instances in `cell_types/<sample>.<segmentation_model>.cytof
 Find one CSV per slide and segmentation model under `cell_types/`. CytoFormer adds a separate CSV with `.cytoformer.cell_type_composition.csv` in the filename. Each CSV contains the total instance count and one row per observed class. Instances without a class appear under **Unclassified**. Proportions use all detected instances as the denominator and appear as fractions in CSV and percentages in MultiQC.
 
 Density divides the instance count by the area of the primary tissue mask in mm². The pipeline counts foreground pixels at full resolution and converts their area using the original slide's pixel size. The CSV records the tissue method and area. Proportion is blank when no instances were detected, and density is blank when the tissue area is zero.
+
+### Cell-type neighborhood enrichment
+
+Find per-pair results in `cell_types/<sample>.<model>.cell_neighborhoods.csv`. CytoFormer results include `.cytoformer` after the segmentation model. Each row records the number of undirected edges for one class pair and Squidpy's enrichment z-score. Positive scores indicate more neighboring pairs than expected under shuffled labels, and negative scores indicate fewer. The MultiQC heatmaps use a fixed color range from −5 to +5. The CSV preserves the full scores.
+
+The graph uses classified instance centroids in microns. The CSV records when a result has fewer than two classes, no edges within the radius, or no variation under permutation. Undefined scores are blank.
 
 ### Segmentation agreement
 

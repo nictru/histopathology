@@ -10,6 +10,7 @@ include { QC                     } from '../subworkflows/local/qc/main'
 include { SEGMENTATION           } from '../subworkflows/local/segmentation/main'
 include { CYTOFORMER_CLASSIFY    } from '../modules/local/cytoformer/classify/main'
 include { SPATIALDATA_CELLTYPECOMPOSITION } from '../modules/local/spatialdata/celltypecomposition/main'
+include { SQUIDPY_NEIGHBORHOODENRICHMENT } from '../modules/local/squidpy/neighborhoodenrichment/main'
 include { STAIN_NORMALIZATION    } from '../subworkflows/local/stain_normalization/main'
 include { TILE_EMBEDDINGS         } from '../subworkflows/local/tile_embeddings/main'
 include { LAZYSLIDE_FEATUREAGGREGATION } from '../modules/local/lazyslide/featureaggregation/main'
@@ -40,6 +41,8 @@ workflow HISTOPATHOLOGY {
     segmentation_model
     segmentation_mpp
     cytoformer_organ
+    cell_neighborhood_radius_um
+    cell_neighborhood_permutations
     embedding_model
     embedding_batch_size
     slide_embedding_method
@@ -55,6 +58,9 @@ workflow HISTOPATHOLOGY {
         : segmentation_model.split(',', -1).collect { model -> model.trim() }.unique()
     if (cytoformer_organ && !segmentation_models) {
         error('CytoFormer requires at least one --segmentation_model.')
+    }
+    if (cell_neighborhood_radius_um != null && !segmentation_models) {
+        error('Cell-type neighborhood enrichment requires at least one --segmentation_model.')
     }
 
     def ch_ingest = ch_samplesheet.map { meta, slide ->
@@ -119,8 +125,20 @@ workflow HISTOPATHOLOGY {
         ch_multiqc_files = ch_multiqc_files.mix(CYTOFORMER_CLASSIFY.out.multiqc_files)
     }
 
-    SPATIALDATA_CELLTYPECOMPOSITION(ch_cells.mix(ch_cell_types).combine(ch_slides_with_masks, by: 0))
+    def ch_classification_sources = ch_cells.mix(ch_cell_types)
+    SPATIALDATA_CELLTYPECOMPOSITION(ch_classification_sources.combine(ch_slides_with_masks, by: 0))
     ch_multiqc_files = ch_multiqc_files.mix(SPATIALDATA_CELLTYPECOMPOSITION.out.multiqc_files)
+
+    def ch_cell_neighborhoods = channel.empty()
+    if (cell_neighborhood_radius_um != null) {
+        SQUIDPY_NEIGHBORHOODENRICHMENT(
+            ch_classification_sources.combine(WSIDATA_INGEST.out.slide, by: 0),
+            cell_neighborhood_radius_um,
+            cell_neighborhood_permutations,
+        )
+        ch_cell_neighborhoods = SQUIDPY_NEIGHBORHOODENRICHMENT.out.neighborhoods
+        ch_multiqc_files = ch_multiqc_files.mix(SQUIDPY_NEIGHBORHOODENRICHMENT.out.multiqc_files)
+    }
 
     def embedding_models = (!embedding_model || embedding_model == 'none')
         ? []
@@ -247,6 +265,7 @@ workflow HISTOPATHOLOGY {
     cells             = ch_cells                                                  // channel: [ val(meta), path(instances) ]
     cell_types        = ch_cell_types                                             // channel: [ val(meta), path(typed_instances) ]
     cell_type_composition = SPATIALDATA_CELLTYPECOMPOSITION.out.composition         // channel: [ val(meta), path(composition_csv) ]
+    cell_neighborhoods = ch_cell_neighborhoods                                    // channel: [ val(meta), path(neighborhood_csv) ]
     segmentation_agreement = ch_segmentation_agreement                            // channel: [ val(meta), path(agreement_csv) ]
     embeddings        = ch_embeddings                                             // channel: [ val(meta), path(embedding_store) ]
     slide_embeddings  = ch_slide_embeddings                                       // channel: [ val(meta), path(slide_embedding) ]

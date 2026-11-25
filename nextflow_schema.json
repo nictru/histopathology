@@ -84,6 +84,17 @@
                     "type": "string",
                     "enum": ["bone", "bone_marrow", "brain", "breast", "cervix", "colon", "heart", "kidney", "liver", "lung", "lymph_node", "ovary", "pancreas", "prostate", "skin", "tonsil"],
                     "description": "Enable CytoFormer cell typing with the selected organ head. Requires a segmentation model and Hugging Face model access."
+                },
+                "cell_neighborhood_radius_um": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "description": "Enable cell-type neighborhood enrichment. Connect classified instances whose centroids are within this distance in microns."
+                },
+                "cell_neighborhood_permutations": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "default": 1000,
+                    "description": "Number of label permutations for neighborhood enrichment."
                 }
             }
         },
