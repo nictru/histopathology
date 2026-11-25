@@ -1,0 +1,27 @@
+{
+    "Emit distinct niche stores for native and CytoFormer predictions": {
+        "content": [
+            [
+                [
+                    "sample",
+                    "sample.classpose.cell_niches.zarr"
+                ],
+                [
+                    "sample",
+                    "sample.classpose.cytoformer.cell_niches.zarr"
+                ]
+            ],
+            [
+                "sample.classpose.cell_niches.composition_mqc.json",
+                "sample.classpose.cell_niches.overview_mqc.json",
+                "sample.classpose.cytoformer.cell_niches.composition_mqc.json",
+                "sample.classpose.cytoformer.cell_niches.overview_mqc.json"
+            ]
+        ],
+        "timestamp": "2026-11-25T09:51:11.349576",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

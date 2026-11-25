@@ -95,6 +95,17 @@
                     "minimum": 2,
                     "default": 1000,
                     "description": "Number of label permutations for neighborhood enrichment."
+                },
+                "cell_niche_radius_um": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "description": "Enable spatial cell niche maps. Connect classified instances whose centroids are within this distance in microns."
+                },
+                "cell_niche_resolution": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 0.5,
+                    "description": "Leiden clustering resolution for spatial cell niches."
                 }
             }
         },

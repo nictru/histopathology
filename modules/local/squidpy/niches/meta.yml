@@ -1,0 +1,84 @@
+name: squidpy_niches
+description: Identify spatial niches from local cell-type composition and plot them on the original slide.
+keywords:
+  - histology
+  - cell types
+  - spatial niches
+tools:
+  - squidpy:
+      description: A framework for spatial omics analysis.
+      homepage: https://squidpy.readthedocs.io/
+      documentation: https://squidpy.readthedocs.io/en/stable/api/squidpy.gr.calculate_niche_neighborhood.html
+      doi: 10.1038/s41592-021-01358-2
+      licence: ["BSD-3-Clause"]
+input:
+  - - meta:
+        type: map
+        description: Slide metadata with the sample identifier.
+    - instances:
+        type: directory
+        description: Cell or nucleus polygons with predicted cell types.
+        pattern: "*.zarr"
+    - slide:
+        type: directory
+        description: Original calibrated slide used for the overlay and representative crops.
+        pattern: "*.zarr"
+  - radius_um:
+      type: float
+      description: Maximum centroid distance in microns.
+  - resolution:
+      type: float
+      description: Positive Leiden clustering resolution.
+output:
+  niches:
+    - - meta:
+          type: map
+          description: Slide metadata with the sample identifier.
+      - "${prefix}.cell_niches.zarr":
+          type: directory
+          description: SpatialData store with source shapes and a linked table of niche assignments and neighborhood compositions.
+          pattern: "*.cell_niches.zarr"
+  multiqc_files:
+    - "${prefix}.cell_niches.*_mqc.json":
+        type: file
+        description: MultiQC slide overlay and representative crops, plus a native composition heatmap when niches are assigned.
+        pattern: "*_mqc.json"
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+topics:
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/amd64:
+      name: community.wave.seqera.io/library/centrosome_mahotas_numpy_pip_pruned:82986b6673118e70
+      build_id: bd-82986b6673118e70_2
+      scan_id: sc-7344f90175d8d171_1
+    linux/arm64:
+      name: community.wave.seqera.io/library/centrosome_mahotas_numpy_pip_pruned:0b5a49b94cab9177
+      build_id: bd-0b5a49b94cab9177_2
+      scan_id: sc-ec4319be9db016f0_1
+  singularity:
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/centrosome_mahotas_numpy_pip_pruned:7ce741965aa2e64e
+      build_id: bd-7ce741965aa2e64e_2
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/a8/a8fa8610235ea4fa141a387087db283d0db6b0e32df9d6ec300078da247a1923/data
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/centrosome_mahotas_numpy_pip_pruned:e4a1604ea0d7ea10
+      build_id: bd-e4a1604ea0d7ea10_2
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/c2/c28c1a6671b80bc112c236c0df9829a3f36855b8288bceab259512f256575821/data
+  conda:
+    linux/amd64:
+      lock_file: modules/local/squidpy/niches/.conda-lock/linux_amd64-bd-82986b6673118e70_2.txt
+    linux/arm64:
+      lock_file: modules/local/squidpy/niches/.conda-lock/linux_arm64-bd-0b5a49b94cab9177_2.txt

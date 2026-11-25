@@ -90,6 +90,10 @@ Squidpy shuffles the predicted labels across the fixed graph. Set `--cell_neighb
 
 The prebuilt neighborhood container targets AMD64. The module also provides a locked ARM64 environment.
 
+### Spatial cell niches
+
+Set `--cell_niche_radius_um` to map local mixes of predicted cell types. For example, `--segmentation_model nulite --cell_niche_radius_um 30` clusters cells by the types of their neighbors within 30 µm. The analysis runs independently for each slide and cell-typing method. It supports native Classpose, NuLite, and HistoPLUS classes and runs separately on CytoFormer predictions when enabled. Set `--cell_niche_resolution` to adjust the Leiden clustering resolution from its default of 0.5.
+
 ## Tile embeddings
 
 Set `--embedding_model resnet50` to generate one feature vector per tissue tile. To run several encoders, pass a comma-separated list such as `--embedding_model uni,uni2,gigapath-flash`. Embedding extraction is disabled by default and can run independently of cell segmentation.
@@ -128,13 +132,6 @@ When you select a paired tile encoder explicitly as well, the pipeline extracts 
 ## Tissue domain maps
 
 Set `--tissue_domain_resolution` to enable tissue domain maps. For example, `--embedding_model resnet50 --tissue_domain_resolution 0.3` clusters the ResNet50 tile embeddings for each slide. The pipeline maps every selected tile encoder, including encoders selected by learned slide aggregation methods. Higher Leiden resolutions generally produce finer partitions.
-
-For Docker, build the module image from its locked environment before launching the pipeline.
-
-```bash
-docker build -t localhost:5000/histopathology-spatialdomain:0.13.0 \
-    -f modules/local/lazyslide/spatialdomain/Dockerfile.pixi modules/local/lazyslide/spatialdomain
-```
 
 ## Running the pipeline
 

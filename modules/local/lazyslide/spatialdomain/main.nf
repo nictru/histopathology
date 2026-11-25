@@ -3,7 +3,17 @@ process LAZYSLIDE_SPATIALDOMAIN {
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
-    container 'localhost:5000/histopathology-spatialdomain:0.13.0'
+    container {
+        def arm64 = (task.arch ?: System.getProperty('os.arch')) in ['aarch64', 'arm64', 'linux/aarch64', 'linux/arm64', 'linux/arm64/v8']
+        if (workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container) {
+            return arm64
+                ? 'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/63/63aff325d57df75cbe3c7b570e28942a017ff89fa57dd8d69617b12d302518c0/data'
+                : 'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/3d/3d3e9582ad18f2daeb8167c469e523a910d770398ae70954a8b46dc5d5094d8b/data'
+        }
+        return arm64
+            ? 'community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:29a4d91eecf93c47'
+            : 'community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:f7dc31a9e9082220'
+    }
 
     input:
     tuple val(meta), path(embeddings, stageAs: 'embeddings.zarr'), val(tile_model), path(slide, stageAs: 'source.zarr')

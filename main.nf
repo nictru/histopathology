@@ -52,6 +52,8 @@ workflow NFCORE_HISTOPATHOLOGY {
         params.cytoformer_organ?.toString(),
         params.cell_neighborhood_radius_um,
         params.cell_neighborhood_permutations,
+        params.cell_niche_radius_um,
+        params.cell_niche_resolution,
         params.embedding_model,
         params.embedding_batch_size,
         params.slide_embedding_method,
@@ -71,6 +73,7 @@ workflow NFCORE_HISTOPATHOLOGY {
     cell_types        = HISTOPATHOLOGY.out.cell_types        // channel: [ val(meta), path(typed_instances) ]
     cell_type_composition = HISTOPATHOLOGY.out.cell_type_composition // channel: [ val(meta), path(composition_csv) ]
     cell_neighborhoods = HISTOPATHOLOGY.out.cell_neighborhoods // channel: [ val(meta), path(neighborhood_csv) ]
+    cell_niches       = HISTOPATHOLOGY.out.cell_niches      // channel: [ val(meta), path(niche_store) ]
     embeddings        = HISTOPATHOLOGY.out.embeddings        // channel: [ val(meta), path(embedding_store) ]
     slide_embeddings  = HISTOPATHOLOGY.out.slide_embeddings  // channel: [ val(meta), path(slide_embedding) ]
     tissue_domains    = HISTOPATHOLOGY.out.tissue_domains    // channel: [ val(meta), path(domain_store) ]

@@ -11,6 +11,7 @@ include { SEGMENTATION           } from '../subworkflows/local/segmentation/main
 include { CYTOFORMER_CLASSIFY    } from '../modules/local/cytoformer/classify/main'
 include { SPATIALDATA_CELLTYPECOMPOSITION } from '../modules/local/spatialdata/celltypecomposition/main'
 include { SQUIDPY_NEIGHBORHOODENRICHMENT } from '../modules/local/squidpy/neighborhoodenrichment/main'
+include { SQUIDPY_NICHES         } from '../modules/local/squidpy/niches/main'
 include { STAIN_NORMALIZATION    } from '../subworkflows/local/stain_normalization/main'
 include { TILE_EMBEDDINGS         } from '../subworkflows/local/tile_embeddings/main'
 include { LAZYSLIDE_FEATUREAGGREGATION } from '../modules/local/lazyslide/featureaggregation/main'
@@ -44,6 +45,8 @@ workflow HISTOPATHOLOGY {
     cytoformer_organ
     cell_neighborhood_radius_um
     cell_neighborhood_permutations
+    cell_niche_radius_um
+    cell_niche_resolution
     embedding_model
     embedding_batch_size
     slide_embedding_method
@@ -63,6 +66,10 @@ workflow HISTOPATHOLOGY {
     }
     if (cell_neighborhood_radius_um != null && !segmentation_models) {
         error('Cell-type neighborhood enrichment requires at least one --segmentation_model.')
+    }
+    def native_cell_typing_models = ['classpose', 'nulite', 'histoplus'].intersect(segmentation_models)
+    if (cell_niche_radius_um != null && !cytoformer_organ && !native_cell_typing_models) {
+        error('Spatial cell niches require Classpose, NuLite, HistoPLUS, or CytoFormer cell typing.')
     }
 
     def ch_ingest = ch_samplesheet.map { meta, slide ->
@@ -140,6 +147,20 @@ workflow HISTOPATHOLOGY {
         )
         ch_cell_neighborhoods = SQUIDPY_NEIGHBORHOODENRICHMENT.out.neighborhoods
         ch_multiqc_files = ch_multiqc_files.mix(SQUIDPY_NEIGHBORHOODENRICHMENT.out.multiqc_files)
+    }
+
+    def ch_cell_niches = channel.empty()
+    if (cell_niche_radius_um != null) {
+        def ch_native_cell_types = ch_cells.filter { _meta, store ->
+            native_cell_typing_models.any { model -> store.name.endsWith(".${model}.cells.zarr") }
+        }
+        SQUIDPY_NICHES(
+            ch_native_cell_types.mix(ch_cell_types).combine(WSIDATA_INGEST.out.slide, by: 0),
+            cell_niche_radius_um,
+            cell_niche_resolution,
+        )
+        ch_cell_niches = SQUIDPY_NICHES.out.niches
+        ch_multiqc_files = ch_multiqc_files.mix(SQUIDPY_NICHES.out.multiqc_files)
     }
 
     def embedding_models = (!embedding_model || embedding_model == 'none')
@@ -280,6 +301,7 @@ workflow HISTOPATHOLOGY {
     cell_types        = ch_cell_types                                             // channel: [ val(meta), path(typed_instances) ]
     cell_type_composition = SPATIALDATA_CELLTYPECOMPOSITION.out.composition         // channel: [ val(meta), path(composition_csv) ]
     cell_neighborhoods = ch_cell_neighborhoods                                    // channel: [ val(meta), path(neighborhood_csv) ]
+    cell_niches       = ch_cell_niches                                            // channel: [ val(meta), path(niche_store) ]
     segmentation_agreement = ch_segmentation_agreement                            // channel: [ val(meta), path(agreement_csv) ]
     embeddings        = ch_embeddings                                             // channel: [ val(meta), path(embedding_store) ]
     slide_embeddings  = ch_slide_embeddings                                       // channel: [ val(meta), path(slide_embedding) ]

@@ -58,3 +58,27 @@ authors:
   - "@nictru"
 maintainers:
   - "@nictru"
+containers:
+  docker:
+    linux/arm64:
+      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:29a4d91eecf93c47
+      build_id: bd-29a4d91eecf93c47_2
+      scan_id: sc-dc0b0502a61eadf2_1
+    linux/amd64:
+      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:f7dc31a9e9082220
+      build_id: bd-f7dc31a9e9082220_2
+      scan_id: sc-6773b35a689759c0_1
+  singularity:
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:71f6238e4a8057dd
+      build_id: bd-71f6238e4a8057dd_2
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/63/63aff325d57df75cbe3c7b570e28942a017ff89fa57dd8d69617b12d302518c0/data
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:13756a00ddcfc880
+      build_id: bd-13756a00ddcfc880_2
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/3d/3d3e9582ad18f2daeb8167c469e523a910d770398ae70954a8b46dc5d5094d8b/data
+  conda:
+    linux/amd64:
+      lock_file: modules/local/lazyslide/spatialdomain/.conda-lock/linux_amd64-bd-f7dc31a9e9082220_2.txt
+    linux/arm64:
+      lock_file: modules/local/lazyslide/spatialdomain/.conda-lock/linux_arm64-bd-29a4d91eecf93c47_2.txt

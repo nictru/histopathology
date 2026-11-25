@@ -23,6 +23,8 @@ report_section_order:
     order: 997
   histopathology_tissue_domains:
     order: 996
+  histopathology_cell_niches:
+    order: 995
   "nf-core-histopathology-methods-description":
     order: -1000
   software_versions:

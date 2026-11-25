@@ -42,6 +42,7 @@ The report includes these views for each slide.
 - **Cell type segmentation** shows the same crop with instances colored by predicted class when the model returns cell-type labels.
 - **Cell-type composition and density** shows a sortable metrics table and stacked bars of class proportions for each slide and model.
 - **Cell-type neighborhood enrichment** shows one heatmap per slide and model when neighborhood analysis returns defined scores.
+- **Spatial cell niches** shows a niche map over the original slide, representative crops, and an interactive heatmap of the cell-type composition around each niche's members.
 - **Tissue domains** shows a semi-transparent overlay of tile clusters on the original slide for each selected tile encoder.
 - **CytoFormer previews** appear in **Cell type segmentation** when `--cytoformer_organ` is set. Each preview identifies the source segmenter and organ head.
 - **Segmentation agreement** appears when two or more segmentation methods run. Switch metric tabs and hover over the interactive heatmaps to compare scores on a fixed 0–1 scale. Each heatmap uses the same hierarchical order based on instance F1. Methods without detections appear last.
@@ -63,6 +64,12 @@ Density divides the instance count by the area of the primary tissue mask in mm�
 Find per-pair results in `cell_types/<sample>.<model>.cell_neighborhoods.csv`. CytoFormer results include `.cytoformer` after the segmentation model. Each row records the number of undirected edges for one class pair and Squidpy's enrichment z-score. Positive scores indicate more neighboring pairs than expected under shuffled labels, and negative scores indicate fewer. The MultiQC heatmaps use a fixed color range from −5 to +5. The CSV preserves the full scores.
 
 The graph uses classified instance centroids in microns. The CSV records when a result has fewer than two classes, no edges within the radius, or no variation under permutation. Undefined scores are blank.
+
+### Spatial cell niches
+
+Find one SpatialData store per slide and cell-typing method at `cell_types/<sample>.<model>.cell_niches.zarr`. CytoFormer filenames include `.cytoformer` after the segmentation model. The store preserves the original polygons. The linked `cell_niches` table contains one row per classified instance. It records the predicted cell type, niche, and number of classified neighbors. Each column in `X` gives the proportion of neighbors of one cell type. Instance centroids in `obsm["spatial"]` use level-0 slide pixels.
+
+Instances without classified neighbors have an unassigned niche and a zero profile. Slides without classified instances have no niche table. MultiQC reports when no niches can be assigned. Niche labels and colors are fitted independently for each slide and cell-typing method. Each representative crop centers on the instance with the closest profile to its niche's mean profile.
 
 ### Segmentation agreement
 
