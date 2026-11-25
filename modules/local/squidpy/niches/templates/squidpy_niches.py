@@ -16,15 +16,20 @@ import dask
 import matplotlib
 import numpy as np
 import pandas as pd
+import zarr
 from anndata import AnnData
+from anndata.io import write_elem
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from PIL import Image
 from spatialdata import SpatialData, read_zarr, transform
-from spatialdata.models import TableModel
+from spatialdata._io import write_shapes
+from spatialdata._io.format import CurrentTablesFormat
+from spatialdata.models import TableModel, get_table_keys
 from spatialdata.transformations import Identity, get_transformation
 from threadpoolctl import threadpool_limits
 from xarray import DataTree
+from zarr.storage import FsspecStore
 
 CPUS = int("${task.cpus}")
 CELL_TYPE = "cell_type"
@@ -316,11 +321,36 @@ metadata = {
     "niche_count": len(table.obs["niche"].cat.categories) if table is not None else 0,
     "note": note,
 }
-SpatialData(
+spatial_data = SpatialData(
     shapes={shape_key: instances} if instances is not None else {},
     tables={"cell_niches": table} if table is not None else {},
     attrs={"cell_niches": metadata},
-).write(f"{prefix}.cell_niches.zarr")
+)
+output_path = Path(f"{prefix}.cell_niches.zarr")
+zarr_store = FsspecStore.from_url(str(output_path.resolve()), storage_options={"auto_mkdir": True})
+root = zarr.create_group(store=zarr_store, zarr_format=3)
+spatial_data.write_attrs(zarr_group=root)
+for shape_name, output_shapes in spatial_data.shapes.items():
+    shape_path = f"shapes/{shape_name}"
+    root.require_group(shape_path)
+    # SpatialData requires a local group handle for the GeoParquet sidecar.
+    write_shapes(output_shapes, zarr.open_group(output_path / shape_path, mode="r+"))
+for table_name, output_table in spatial_data.tables.items():
+    tables_group = root.require_group("tables")
+    write_elem(tables_group, table_name, output_table)
+    table_region, table_region_key, table_instance_key = (
+        get_table_keys(output_table) if TableModel.ATTRS_KEY in output_table.uns else (None, None, None)
+    )
+    tables_group[table_name].attrs.update(
+        {
+            "spatialdata-encoding-type": "ngff:regions_table",
+            "region": table_region,
+            "region_key": table_region_key,
+            "instance_key": table_instance_key,
+            "version": CurrentTablesFormat().spatialdata_format_version,
+        }
+    )
+zarr.consolidate_metadata(zarr_store)
 with dask.config.set(scheduler="threads", num_workers=CPUS):
     write_report(prefix, title, note, slide.images["wsi"], table, radius, mpp)
 versions = {

@@ -14,11 +14,14 @@ os.environ["MPLBACKEND"] = "Agg"
 import dask
 import numpy as np
 import shapely
+import zarr
 from lazyslide import open_wsi, tl
 from matplotlib.figure import Figure
 from spatialdata import SpatialData, read_zarr, to_polygons, transform
+from spatialdata._io import write_shapes
 from spatialdata.models import ShapesModel
 from xarray import DataTree
+from zarr.storage import FsspecStore
 
 
 def make_regions(slide, tiles, mask):
@@ -141,7 +144,17 @@ metadata = {
     "mpp": mpp,
     "region_count": len(shapes.get("tissue_regions", ())),
 }
-SpatialData(shapes=shapes, attrs={"tissue_regions": metadata}).write(f"{output}.zarr")
+spatial_data = SpatialData(shapes=shapes, attrs={"tissue_regions": metadata})
+output_path = Path(f"{output}.zarr")
+zarr_store = FsspecStore.from_url(str(output_path.resolve()), storage_options={"auto_mkdir": True})
+root = zarr.create_group(store=zarr_store, zarr_format=3)
+spatial_data.write_attrs(zarr_group=root)
+for shape_name, output_shapes in spatial_data.shapes.items():
+    shape_path = f"shapes/{shape_name}"
+    root.require_group(shape_path)
+    # SpatialData requires a local group handle for the GeoParquet sidecar.
+    write_shapes(output_shapes, zarr.open_group(output_path / shape_path, mode="r+"))
+zarr.consolidate_metadata(zarr_store)
 payload = {
     "id": output,
     "parent_id": "histopathology_tissue_regions",

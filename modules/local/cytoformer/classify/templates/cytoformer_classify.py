@@ -18,6 +18,7 @@ import cv2
 import numpy as np
 import timm
 import torch
+import zarr
 from huggingface_hub import hf_hub_download
 from huggingface_hub.errors import GatedRepoError
 from lazyslide import open_wsi
@@ -27,8 +28,10 @@ from matplotlib.patches import Patch
 from PIL import Image
 from shapely.geometry import box
 from spatialdata import read_zarr
+from spatialdata._io import write_shapes
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from torch import nn
+from zarr.storage import FsspecStore
 
 MODEL_REPO = "zhihuanglab/CytoFormer"
 MODEL_REVISION = "6a3572026e491774e7530beb3485e31459fdbee5"
@@ -236,7 +239,16 @@ def main():
         "checkpoint_revision": MODEL_REVISION,
         "instance_count": count,
     }
-    segmentation.write(f"{prefix}.cytoformer.zarr")
+    output_path = Path(f"{prefix}.cytoformer.zarr")
+    zarr_store = FsspecStore.from_url(str(output_path.resolve()), storage_options={"auto_mkdir": True})
+    root = zarr.create_group(store=zarr_store, zarr_format=3)
+    segmentation.write_attrs(zarr_group=root)
+    for shape_name, output_shapes in segmentation.shapes.items():
+        shape_path = f"shapes/{shape_name}"
+        root.require_group(shape_path)
+        # SpatialData requires a local group handle for the GeoParquet sidecar.
+        write_shapes(output_shapes, zarr.open_group(output_path / shape_path, mode="r+"))
+    zarr.consolidate_metadata(zarr_store)
     write_multiqc(prefix, "${meta.id}", source_model, organ, count, image)
     versions = {
         "CytoFormer": MODEL_REVISION,

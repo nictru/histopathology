@@ -14,11 +14,14 @@ os.environ["NUMBA_NUM_THREADS"] = "${task.cpus}"
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import zarr
 from lazyslide import open_wsi, pl, pp, tl
 from scipy.sparse import csr_matrix
 from sklearn.preprocessing import normalize
 from spatialdata import SpatialData, read_zarr
+from spatialdata._io import write_shapes
 from threadpoolctl import threadpool_limits
+from zarr.storage import FsspecStore
 
 
 def smooth_features(wsi, features):
@@ -151,7 +154,17 @@ attrs["tissue_domains"] = {
     "note": note,
 }
 output = f"{prefix}.{tile_model}.tissue_domains"
-SpatialData(shapes=shapes, attrs=attrs).write(f"{output}.zarr")
+spatial_data = SpatialData(shapes=shapes, attrs=attrs)
+output_path = Path(f"{output}.zarr")
+zarr_store = FsspecStore.from_url(str(output_path.resolve()), storage_options={"auto_mkdir": True})
+root = zarr.create_group(store=zarr_store, zarr_format=3)
+spatial_data.write_attrs(zarr_group=root)
+for shape_name, output_shapes in spatial_data.shapes.items():
+    shape_path = f"shapes/{shape_name}"
+    root.require_group(shape_path)
+    # SpatialData requires a local group handle for the GeoParquet sidecar.
+    write_shapes(output_shapes, zarr.open_group(output_path / shape_path, mode="r+"))
+zarr.consolidate_metadata(zarr_store)
 domain_label = "domain" if domain_count == 1 else "domains"
 tile_label = "tile" if tile_count == 1 else "tiles"
 summary = f"{domain_count:,} {domain_label} across {tile_count:,} {tile_label}. {note}".strip()

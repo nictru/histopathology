@@ -11,10 +11,14 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import shapely
+import zarr
 from anndata import AnnData
+from anndata.io import write_elem
 from spatialdata import SpatialData, read_zarr, transform
-from spatialdata.models import TableModel
-from zarr import open_group
+from spatialdata._io import write_shapes
+from spatialdata._io.format import CurrentTablesFormat
+from spatialdata.models import TableModel, get_table_keys
+from zarr.storage import FsspecStore
 
 MEASUREMENTS = {
     "area": ("Area", "µm²"),
@@ -279,7 +283,7 @@ instance_type = segmentation.get(
 title = f"{sample} · {segmenter}"
 if classifier == "cytoformer":
     title += f" + CytoFormer ({organ})"
-slide = open_group("slide.zarr", mode="r").attrs["ingestion"]
+slide = zarr.open_group("slide.zarr", mode="r").attrs["ingestion"]
 mpp = float(slide["mpp"])
 if not isfinite(mpp) or mpp <= 0:
     raise ValueError("Cell morphology requires a positive slide pixel size.")
@@ -354,11 +358,36 @@ attrs = {
     "instance_count": len(obs),
     "measured_instances": int(obs["valid_geometry"].sum()) if table is not None else 0,
 }
-SpatialData(
+spatial_data = SpatialData(
     shapes={shape_key: instances} if instances is not None else {},
     tables={"cell_features": table} if table is not None else {},
     attrs={"cell_features": attrs},
-).write(f"{prefix}.cell_features.zarr")
+)
+output_path = Path(f"{prefix}.cell_features.zarr")
+zarr_store = FsspecStore.from_url(str(output_path.resolve()), storage_options={"auto_mkdir": True})
+root = zarr.create_group(store=zarr_store, zarr_format=3)
+spatial_data.write_attrs(zarr_group=root)
+for shape_name, output_shapes in spatial_data.shapes.items():
+    shape_path = f"shapes/{shape_name}"
+    root.require_group(shape_path)
+    # SpatialData requires a local group handle for the GeoParquet sidecar.
+    write_shapes(output_shapes, zarr.open_group(output_path / shape_path, mode="r+"))
+for table_name, output_table in spatial_data.tables.items():
+    tables_group = root.require_group("tables")
+    write_elem(tables_group, table_name, output_table)
+    table_region, table_region_key, table_instance_key = (
+        get_table_keys(output_table) if TableModel.ATTRS_KEY in output_table.uns else (None, None, None)
+    )
+    tables_group[table_name].attrs.update(
+        {
+            "spatialdata-encoding-type": "ngff:regions_table",
+            "region": table_region,
+            "region_key": table_region_key,
+            "instance_key": table_instance_key,
+            "version": CurrentTablesFormat().spatialdata_format_version,
+        }
+    )
+zarr.consolidate_metadata(zarr_store)
 morphology_report(f"{prefix}.cell_features", title, table)
 if region_store is not None:
     write_composition(

@@ -28,6 +28,7 @@ from spatialdata._io import write_labels
 from spatialdata.models import Image2DModel, Labels2DModel
 from spatialdata.transformations import get_transformation
 from xarray import DataTree
+from zarr.storage import FsspecStore
 
 matplotlib.use("Agg")
 
@@ -201,15 +202,17 @@ with dask.config.set(scheduler="threads", num_workers=int("${task.cpus}")):
         detection["channel"] = "saturation"
     attrs = {"tissue_detection": detection}
     output = "${mask_prefix}.tissue.zarr"
-    SpatialData(attrs=attrs).write(output, consolidate_metadata=False)
-    root = zarr.open_group(output, mode="r+")
+    output_path = Path(output)
+    zarr_store = FsspecStore.from_url(str(output_path.resolve()), storage_options={"auto_mkdir": True})
+    root = zarr.create_group(store=zarr_store, zarr_format=3)
+    SpatialData(attrs=attrs).write_attrs(zarr_group=root)
     write_labels(
         labels,
         root,
         TISSUE,
         storage_options={"chunks": (256, 256), "shards": (2048, 2048)},
     )
-    zarr.consolidate_metadata(root.store)
+    zarr.consolidate_metadata(zarr_store)
 
 step = ceil(max(mask.shape) / REPORT_EDGE)
 figure = Figure(figsize=(6, 5), layout="constrained")

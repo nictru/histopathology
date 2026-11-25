@@ -14,9 +14,12 @@ os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 import matplotlib
 import matplotlib.pyplot as plt
 import torch
+import zarr
 from lazyslide import open_wsi, pl, seg
 from lazyslide_models.segmentation import GrandQCArtifact
 from spatialdata import SpatialData, read_zarr
+from spatialdata._io import write_shapes
+from zarr.storage import FsspecStore
 
 matplotlib.use("Agg")
 
@@ -103,7 +106,17 @@ attrs = {
         "artifact_regions": counts,
     }
 }
-SpatialData(shapes=shapes, attrs=attrs).write("${prefix}.grandqc.zarr")
+spatial_data = SpatialData(shapes=shapes, attrs=attrs)
+output_path = Path("${prefix}.grandqc.zarr")
+zarr_store = FsspecStore.from_url(str(output_path.resolve()), storage_options={"auto_mkdir": True})
+root = zarr.create_group(store=zarr_store, zarr_format=3)
+spatial_data.write_attrs(zarr_group=root)
+for shape_name, output_shapes in spatial_data.shapes.items():
+    shape_path = f"shapes/{shape_name}"
+    root.require_group(shape_path)
+    # SpatialData requires a local group handle for the GeoParquet sidecar.
+    write_shapes(output_shapes, zarr.open_group(output_path / shape_path, mode="r+"))
+zarr.consolidate_metadata(zarr_store)
 
 figure, note = plot_artifacts(wsi, shapes.get("artifacts"), tile_count, variant)
 write_multiqc(

@@ -16,6 +16,7 @@ import datashader as ds
 import matplotlib
 import numpy as np
 import torch
+import zarr
 from lazyslide import open_wsi, tl
 from lazyslide_models import MODEL_REGISTRY
 from lazyslide_models.tile_prediction.cv_features import (
@@ -27,7 +28,9 @@ from lazyslide_models.tile_prediction.cv_features import (
 )
 from matplotlib.figure import Figure
 from spatialdata import read_zarr
+from spatialdata._io import write_shapes
 from xarray import DataTree
+from zarr.storage import FsspecStore
 
 matplotlib.use("Agg")
 
@@ -151,7 +154,16 @@ tiles = read_zarr("tiles.zarr")
 if "tiles" in tiles.shapes and len(tiles.shapes["tiles"]):
     tiles.shapes["tiles"] = score_tiles(wsi, tiles, method)
 tiles.attrs["tile_qc"] = {"method": method}
-tiles.write(f"{prefix}.{method}.zarr")
+output_path = Path(f"{prefix}.{method}.zarr")
+zarr_store = FsspecStore.from_url(str(output_path.resolve()), storage_options={"auto_mkdir": True})
+root = zarr.create_group(store=zarr_store, zarr_format=3)
+tiles.write_attrs(zarr_group=root)
+for shape_name, output_shapes in tiles.shapes.items():
+    shape_path = f"shapes/{shape_name}"
+    root.require_group(shape_path)
+    # SpatialData requires a local group handle for the GeoParquet sidecar.
+    write_shapes(output_shapes, zarr.open_group(output_path / shape_path, mode="r+"))
+zarr.consolidate_metadata(zarr_store)
 
 method_names = {
     "tileqc": "Image metrics",

@@ -15,12 +15,15 @@ os.environ.setdefault("CELLPOSE_LOCAL_MODELS_PATH", str(Path(".cellpose").resolv
 
 import matplotlib
 import torch
+import zarr
 from lazyslide import open_wsi, seg
 from lazyslide_models import MODEL_REGISTRY
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from shapely.geometry import box
 from spatialdata import SpatialData, read_zarr
+from spatialdata._io import write_shapes
+from zarr.storage import FsspecStore
 
 matplotlib.use("Agg")
 
@@ -180,9 +183,17 @@ segmentation = {
     "instance_count": len(shapes[shape_key]) if shapes else 0,
     "tile_spec": tile_spec,
 }
-SpatialData(shapes=shapes, attrs={"segmentation": segmentation}).write(
-    "${prefix}.${model}.cells.zarr"
-)
+spatial_data = SpatialData(shapes=shapes, attrs={"segmentation": segmentation})
+output_path = Path("${prefix}.${model}.cells.zarr")
+zarr_store = FsspecStore.from_url(str(output_path.resolve()), storage_options={"auto_mkdir": True})
+root = zarr.create_group(store=zarr_store, zarr_format=3)
+spatial_data.write_attrs(zarr_group=root)
+for shape_name, output_shapes in spatial_data.shapes.items():
+    shape_path = f"shapes/{shape_name}"
+    root.require_group(shape_path)
+    # SpatialData requires a local group handle for the GeoParquet sidecar.
+    write_shapes(output_shapes, zarr.open_group(output_path / shape_path, mode="r+"))
+zarr.consolidate_metadata(zarr_store)
 
 instances = shapes.get(shape_key)
 figure, note = (None, "No instances detected.")

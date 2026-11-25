@@ -18,6 +18,7 @@ from spatialdata import SpatialData, read_zarr
 from spatialdata._io import write_image
 from squidpy.experimental import im
 from xarray import DataTree
+from zarr.storage import FsspecStore
 
 matplotlib.use("Agg")
 
@@ -118,8 +119,10 @@ with dask.config.set(scheduler="threads", num_workers=int("${task.cpus}")):
             record["skip_reason"] = "no_tissue"
         attrs = {**slide.attrs, "normalization": {"method": method, **record}}
         output = f"{prefix}.normalized.zarr"
-        SpatialData(attrs=attrs).write(output, consolidate_metadata=False)
-        root = zarr.open_group(output, mode="r+")
+        output_path = Path(output)
+        zarr_store = FsspecStore.from_url(str(output_path.resolve()), storage_options={"auto_mkdir": True})
+        root = zarr.create_group(store=zarr_store, zarr_format=3)
+        SpatialData(attrs=attrs).write_attrs(zarr_group=root)
         # SpatialData.write() does not expose raster storage options.
         write_image(
             image,
@@ -127,7 +130,7 @@ with dask.config.set(scheduler="threads", num_workers=int("${task.cpus}")):
             IMAGE,
             storage_options={"chunks": (256, 256), "shards": (2048, 2048)},
         )
-        zarr.consolidate_metadata(root.store)
+        zarr.consolidate_metadata(zarr_store)
         original_preview = thumbnail(original)
         normalized_preview = thumbnail(image) if has_tissue else original_preview
         figure = Figure(figsize=(9, 4.5), layout="constrained")

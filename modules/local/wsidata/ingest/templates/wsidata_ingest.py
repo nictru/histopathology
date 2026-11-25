@@ -13,6 +13,7 @@ from spatialdata import SpatialData
 from spatialdata._io import write_image
 from spatialdata.models import Image2DModel
 from wsidata import open_wsi
+from zarr.storage import FsspecStore
 
 
 def add_pyramid(wsi):
@@ -95,15 +96,17 @@ report = {
 wsi.attrs["ingestion"] = report
 output = f"{prefix}.zarr"
 with dask.config.set(scheduler="synchronous"):
-    SpatialData(attrs=wsi.attrs).write(output, consolidate_metadata=False)
-    root = zarr.open_group(output, mode="r+")
+    output_path = Path(output)
+    zarr_store = FsspecStore.from_url(str(output_path.resolve()), storage_options={"auto_mkdir": True})
+    root = zarr.create_group(store=zarr_store, zarr_format=3)
+    SpatialData(attrs=wsi.attrs).write_attrs(zarr_group=root)
     write_image(
         wsi.images["wsi"],
         root.require_group("images/wsi"),
         "wsi",
         storage_options={"chunks": (256, 256), "shards": (2048, 2048)},
     )
-    zarr.consolidate_metadata(root.store)
+    zarr.consolidate_metadata(zarr_store)
 
 versions = {"python": platform.python_version()}
 versions.update({name: version(name) for name in ("wsidata", "spatialdata", reader_package)})

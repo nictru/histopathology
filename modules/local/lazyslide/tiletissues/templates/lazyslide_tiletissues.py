@@ -5,11 +5,14 @@ from importlib.metadata import version
 from pathlib import Path
 
 import dask
+import zarr
 from lazyslide import open_wsi, pp
 from shapely import box
 from spatialdata import SpatialData, read_zarr, to_polygons, transform
+from spatialdata._io import write_shapes
 from wsidata.io import add_tissues
 from xarray import DataTree
+from zarr.storage import FsspecStore
 
 slide = open_wsi(read_zarr("source.zarr"), image_key="wsi")
 mask = read_zarr("tissue.zarr")
@@ -43,7 +46,17 @@ if "tiles" in slide.shapes:
         shapes["tiles"] = tiles
         shapes["tissues"] = slide.shapes["tissues"]
 attrs = {"tile_spec": slide.attrs["tile_spec"] if shapes else {}}
-SpatialData(shapes=shapes, attrs=attrs).write("${prefix}.tiles.zarr")
+spatial_data = SpatialData(shapes=shapes, attrs=attrs)
+output_path = Path("${prefix}.tiles.zarr")
+zarr_store = FsspecStore.from_url(str(output_path.resolve()), storage_options={"auto_mkdir": True})
+root = zarr.create_group(store=zarr_store, zarr_format=3)
+spatial_data.write_attrs(zarr_group=root)
+for shape_name, output_shapes in spatial_data.shapes.items():
+    shape_path = f"shapes/{shape_name}"
+    root.require_group(shape_path)
+    # SpatialData requires a local group handle for the GeoParquet sidecar.
+    write_shapes(output_shapes, zarr.open_group(output_path / shape_path, mode="r+"))
+zarr.consolidate_metadata(zarr_store)
 
 versions = {name: version(name) for name in ("lazyslide", "spatialdata", "wsidata")}
 Path("versions.yml").write_text(json.dumps({"${task.process}": versions}) + chr(10))

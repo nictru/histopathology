@@ -11,9 +11,15 @@ os.environ.setdefault("HF_HUB_DISABLE_IMPLICIT_TOKEN", "0")
 os.environ.setdefault("TORCH_HOME", str(Path(".torch").resolve()))
 
 import torch
+import zarr
+from anndata.io import write_elem
 from lazyslide import open_wsi, tl
 from lazyslide_models import MODEL_REGISTRY, list_models
 from spatialdata import SpatialData, read_zarr
+from spatialdata._io import write_shapes
+from spatialdata._io.format import CurrentTablesFormat
+from spatialdata.models import TableModel, get_table_keys
+from zarr.storage import FsspecStore
 
 name = "${model}"
 device = "${task.accelerator ? 'cuda' : 'cpu'}"
@@ -57,9 +63,32 @@ attrs = {
         "tile_count": tile_count,
     },
 }
-SpatialData(shapes=dict(grid.shapes), tables=tables, attrs=attrs).write(
-    "${prefix}.${model}.embeddings.zarr"
-)
+spatial_data = SpatialData(shapes=dict(grid.shapes), tables=tables, attrs=attrs)
+output_path = Path("${prefix}.${model}.embeddings.zarr")
+zarr_store = FsspecStore.from_url(str(output_path.resolve()), storage_options={"auto_mkdir": True})
+root = zarr.create_group(store=zarr_store, zarr_format=3)
+spatial_data.write_attrs(zarr_group=root)
+for shape_name, output_shapes in spatial_data.shapes.items():
+    shape_path = f"shapes/{shape_name}"
+    root.require_group(shape_path)
+    # SpatialData requires a local group handle for the GeoParquet sidecar.
+    write_shapes(output_shapes, zarr.open_group(output_path / shape_path, mode="r+"))
+for table_name, output_table in spatial_data.tables.items():
+    tables_group = root.require_group("tables")
+    write_elem(tables_group, table_name, output_table)
+    table_region, table_region_key, table_instance_key = (
+        get_table_keys(output_table) if TableModel.ATTRS_KEY in output_table.uns else (None, None, None)
+    )
+    tables_group[table_name].attrs.update(
+        {
+            "spatialdata-encoding-type": "ngff:regions_table",
+            "region": table_region,
+            "region_key": table_region_key,
+            "instance_key": table_instance_key,
+            "version": CurrentTablesFormat().spatialdata_format_version,
+        }
+    )
+zarr.consolidate_metadata(zarr_store)
 
 packages = ("lazyslide", "lazyslide-models", "spatialdata", "timm", "torch", "wsidata")
 versions = {package: version(package) for package in packages}
