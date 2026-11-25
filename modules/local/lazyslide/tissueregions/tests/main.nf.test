@@ -1,0 +1,33 @@
+nextflow_process {
+    name "Test LAZYSLIDE_TISSUEREGIONS"
+    script "../main.nf"
+    process "LAZYSLIDE_TISSUEREGIONS"
+
+    tag "modules"
+    tag "modules_local"
+    tag "lazyslide/tissueregions"
+
+    test("Emit one region store and overlay for the selected encoder") {
+        options "-stub-run"
+
+        when {
+            process {
+                """
+                def root = java.nio.file.Files.createTempDirectory('region-inputs')
+                def domains = java.nio.file.Files.createDirectory(root.resolve('sample.resnet50.tissue_domains.zarr'))
+                def slide = java.nio.file.Files.createDirectory(root.resolve('sample.zarr'))
+                def tissue = java.nio.file.Files.createDirectory(root.resolve('sample.otsu.tissue.zarr'))
+                input[0] = channel.of([[id: 'sample'], domains, slide, tissue])
+                input[1] = 'resnet50'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def stores = process.out.regions.collect { meta, store -> [meta.id, path(store).fileName.toString()] }
+            def plots = process.out.multiqc_files.collect { path(it).fileName.toString() }
+            assert snapshot(stores, plots).match()
+        }
+    }
+}

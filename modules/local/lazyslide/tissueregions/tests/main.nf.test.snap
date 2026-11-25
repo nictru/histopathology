@@ -1,0 +1,20 @@
+{
+    "Emit one region store and overlay for the selected encoder": {
+        "content": [
+            [
+                [
+                    "sample",
+                    "sample.resnet50.tissue_regions.zarr"
+                ]
+            ],
+            [
+                "sample.resnet50.tissue_regions_mqc.json"
+            ]
+        ],
+        "timestamp": "2026-11-25T10:37:31.128219",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

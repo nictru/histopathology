@@ -12,10 +12,12 @@ include { CYTOFORMER_CLASSIFY    } from '../modules/local/cytoformer/classify/ma
 include { SPATIALDATA_CELLTYPECOMPOSITION } from '../modules/local/spatialdata/celltypecomposition/main'
 include { SQUIDPY_NEIGHBORHOODENRICHMENT } from '../modules/local/squidpy/neighborhoodenrichment/main'
 include { SQUIDPY_NICHES         } from '../modules/local/squidpy/niches/main'
+include { SPATIALDATA_CELLFEATURES } from '../modules/local/spatialdata/cellfeatures/main'
 include { STAIN_NORMALIZATION    } from '../subworkflows/local/stain_normalization/main'
 include { TILE_EMBEDDINGS         } from '../subworkflows/local/tile_embeddings/main'
 include { LAZYSLIDE_FEATUREAGGREGATION } from '../modules/local/lazyslide/featureaggregation/main'
 include { LAZYSLIDE_SPATIALDOMAIN } from '../modules/local/lazyslide/spatialdomain/main'
+include { LAZYSLIDE_TISSUEREGIONS } from '../modules/local/lazyslide/tissueregions/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -47,6 +49,8 @@ workflow HISTOPATHOLOGY {
     cell_neighborhood_permutations
     cell_niche_radius_um
     cell_niche_resolution
+    cell_features
+    cell_region_domain_model
     embedding_model
     embedding_batch_size
     slide_embedding_method
@@ -70,6 +74,9 @@ workflow HISTOPATHOLOGY {
     def native_cell_typing_models = ['classpose', 'nulite', 'histoplus'].intersect(segmentation_models)
     if (cell_niche_radius_um != null && !cytoformer_organ && !native_cell_typing_models) {
         error('Spatial cell niches require Classpose, NuLite, HistoPLUS, or CytoFormer cell typing.')
+    }
+    if (cell_features && !segmentation_models) {
+        error('Cell features require at least one --segmentation_model.')
     }
 
     def ch_ingest = ch_samplesheet.map { meta, slide ->
@@ -193,6 +200,9 @@ workflow HISTOPATHOLOGY {
     if (tissue_domain_resolution != null && !embedding_models) {
         error('Tissue domain maps require --embedding_model or a learned --slide_embedding_method.')
     }
+    if (cell_region_domain_model && (tissue_domain_resolution == null || !(cell_region_domain_model in embedding_models))) {
+        error('--cell_region_domain_model requires --tissue_domain_resolution and a selected tile encoder.')
+    }
     def ch_embeddings = channel.empty()
     def ch_slide_embeddings = channel.empty()
     def ch_tissue_domains = channel.empty()
@@ -232,6 +242,38 @@ workflow HISTOPATHOLOGY {
             LAZYSLIDE_FEATUREAGGREGATION(ch_slide_inputs)
             ch_slide_embeddings = LAZYSLIDE_FEATUREAGGREGATION.out.embeddings
         }
+    }
+
+    def ch_tissue_regions = channel.empty()
+    if (cell_region_domain_model) {
+        def ch_region_domains = ch_tissue_domains.filter { _meta, store ->
+            store.name.endsWith(".${cell_region_domain_model}.tissue_domains.zarr")
+        }
+        LAZYSLIDE_TISSUEREGIONS(ch_region_domains.join(ch_slides_with_masks), cell_region_domain_model)
+        ch_tissue_regions = LAZYSLIDE_TISSUEREGIONS.out.regions
+        ch_multiqc_files = ch_multiqc_files.mix(LAZYSLIDE_TISSUEREGIONS.out.multiqc_files)
+    }
+
+    def ch_cell_features = channel.empty()
+    def ch_region_composition = channel.empty()
+    if (cell_features || (cell_region_domain_model && segmentation_models)) {
+        def ch_features_with_slide = ch_classification_sources.combine(WSIDATA_INGEST.out.slide, by: 0)
+        def ch_feature_inputs = ch_features_with_slide.map { meta, instances, slide -> [meta, instances, slide, [], []] }
+        if (cell_region_domain_model) {
+            def ch_features_by_source = ch_features_with_slide.combine(ch_tissue_regions, by: 0)
+                .map { meta, instances, slide, regions ->
+                    [[meta.id, instances.name.replaceFirst(/(\.cells)?\.zarr$/, '')], meta, instances, slide, regions]
+                }
+            def ch_niches_by_source = ch_cell_niches.map { meta, store ->
+                [[meta.id, store.name.replaceFirst(/\.cell_niches\.zarr$/, '')], store]
+            }
+            ch_feature_inputs = ch_features_by_source.join(ch_niches_by_source, remainder: true, failOnDuplicate: true)
+                .map { _key, meta, instances, slide, regions, niches -> [meta, instances, slide, regions, niches ?: []] }
+        }
+        SPATIALDATA_CELLFEATURES(ch_feature_inputs)
+        ch_cell_features = SPATIALDATA_CELLFEATURES.out.features
+        ch_region_composition = SPATIALDATA_CELLFEATURES.out.composition
+        ch_multiqc_files = ch_multiqc_files.mix(SPATIALDATA_CELLFEATURES.out.multiqc_files)
     }
 
     def ch_versions = channel.empty()
@@ -302,10 +344,13 @@ workflow HISTOPATHOLOGY {
     cell_type_composition = SPATIALDATA_CELLTYPECOMPOSITION.out.composition         // channel: [ val(meta), path(composition_csv) ]
     cell_neighborhoods = ch_cell_neighborhoods                                    // channel: [ val(meta), path(neighborhood_csv) ]
     cell_niches       = ch_cell_niches                                            // channel: [ val(meta), path(niche_store) ]
+    cell_features     = ch_cell_features                                          // channel: [ val(meta), path(feature_store) ]
+    region_composition = ch_region_composition                                   // channel: [ val(meta), path(composition_csv) ]
     segmentation_agreement = ch_segmentation_agreement                            // channel: [ val(meta), path(agreement_csv) ]
     embeddings        = ch_embeddings                                             // channel: [ val(meta), path(embedding_store) ]
     slide_embeddings  = ch_slide_embeddings                                       // channel: [ val(meta), path(slide_embedding) ]
     tissue_domains    = ch_tissue_domains                                         // channel: [ val(meta), path(domain_store) ]
+    tissue_regions    = ch_tissue_regions                                         // channel: [ val(meta), path(region_store) ]
     multiqc_report    = MULTIQC.out.report.map { _meta, report -> [report] }.toList() // channel: /path/to/multiqc_report.html
     versions          = ch_versions                                              // channel: [ path(versions.yml) ]
 }

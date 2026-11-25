@@ -106,6 +106,16 @@
                     "exclusiveMinimum": 0,
                     "default": 0.5,
                     "description": "Leiden clustering resolution for spatial cell niches."
+                },
+                "cell_features": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Measure cell or nucleus morphology from segmentation polygons."
+                },
+                "cell_region_domain_model": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+                    "description": "Use this tile encoder's tissue domain map to produce tissue regions and assign segmented instances to regions."
                 }
             }
         },

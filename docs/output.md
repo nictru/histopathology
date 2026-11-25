@@ -44,6 +44,8 @@ The report includes these views for each slide.
 - **Cell-type neighborhood enrichment** shows one heatmap per slide and model when neighborhood analysis returns defined scores.
 - **Spatial cell niches** shows a niche map over the original slide, representative crops, and an interactive heatmap of the cell-type composition around each niche's members.
 - **Tissue domains** shows a semi-transparent overlay of tile clusters on the original slide for each selected tile encoder.
+- **Tissue regions** overlays the region polygons from the selected domain map on the original slide.
+- **Cell and nucleus features** shows interactive morphology box plots and a sortable composition table when tissue regions are available.
 - **CytoFormer previews** appear in **Cell type segmentation** when `--cytoformer_organ` is set. Each preview identifies the source segmenter and organ head.
 - **Segmentation agreement** appears when two or more segmentation methods run. Switch metric tabs and hover over the interactive heatmaps to compare scores on a fixed 0–1 scale. Each heatmap uses the same hierarchical order based on instance F1. Methods without detections appear last.
 
@@ -90,6 +92,14 @@ Find one AnnData file per slide, tile encoder, and aggregation method in `slide_
 Find one SpatialData store per slide and tile encoder at `tissue_domains/<sample>.<tile_encoder>.tissue_domains.zarr`. Each tile polygon keeps its original `tile_id` and has a `domain` label. The `tissue_domains` metadata records the clustering resolution and the number of tiles and domains.
 
 The pipeline smooths tile embeddings over neighboring grid positions in the same tissue piece and clusters the smoothed features with LazySlide. Domain labels and colors are assigned independently for each slide and encoder. Slides without eligible tiles produce an empty store and a note in MultiQC.
+
+### Tissue regions and cell features
+
+Find the regions in `tissue_regions/<sample>.<tile_encoder>.tissue_regions.zarr`. Each connected polygon has a slide-local `region_id`, a domain label, a tissue area in mm², and the area it shares with other regions. The tissue area used for density excludes overlaps. Region boundaries follow the primary tissue contours used for tiling.
+
+Find morphology in `cell_features/<sample>.<model>.cell_features.zarr`. CytoFormer filenames include `.cytoformer` after the segmentation model. The linked `cell_features` table preserves the original instance IDs and records area in µm², perimeter in µm, and unitless circularity and solidity. Invalid polygons retain their IDs and have missing measurements. MultiQC compares the distributions by predicted class and shows the number of valid measurements for each class.
+
+With regions enabled, the table records the region covering each instance's representative point. Points in multiple regions are marked **Ambiguous**, and points outside the regions or from invalid geometries are **Unassigned**. The corresponding `*.region_composition.csv` reports counts, proportions, and instances per mm² by region and predicted class, with a separate breakdown by niche when available. Proportions use the instance count for the region or assignment status. Densities are blank for ambiguous and unassigned instances and for regions with zero usable tissue area.
 
 ### Pipeline information
 

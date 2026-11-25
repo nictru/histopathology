@@ -1,0 +1,38 @@
+nextflow_process {
+    name "Test SPATIALDATA_CELLFEATURES"
+    script "../main.nf"
+    process "SPATIALDATA_CELLFEATURES"
+
+    tag "modules"
+    tag "modules_local"
+    tag "spatialdata/cellfeatures"
+
+    test("Emit separate morphology outputs and compose only when regions are supplied") {
+        options "-stub-run"
+
+        when {
+            process {
+                """
+                def root = java.nio.file.Files.createTempDirectory('cell-feature-inputs')
+                def slide = java.nio.file.Files.createDirectory(root.resolve('sample.zarr'))
+                def nativeCells = java.nio.file.Files.createDirectory(root.resolve('sample.classpose.cells.zarr'))
+                def typedCells = java.nio.file.Files.createDirectory(root.resolve('sample.classpose.cytoformer.zarr'))
+                def regions = java.nio.file.Files.createDirectory(root.resolve('sample.resnet50.tissue_regions.zarr'))
+                def niches = java.nio.file.Files.createDirectory(root.resolve('sample.classpose.cytoformer.cell_niches.zarr'))
+                input[0] = channel.of(
+                    [[id: 'sample'], nativeCells, slide, [], []],
+                    [[id: 'sample'], typedCells, slide, regions, niches]
+                )
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def stores = process.out.features.collect { meta, store -> [meta.id, path(store).fileName.toString()] }.sort { it[1] }
+            def composition = process.out.composition.collect { meta, file -> [meta.id, path(file).fileName.toString()] }
+            def plots = process.out.multiqc_files.flatten().collect { path(it).fileName.toString() }.sort()
+            assert snapshot(stores, composition, plots).match()
+        }
+    }
+}

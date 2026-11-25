@@ -54,6 +54,8 @@ workflow NFCORE_HISTOPATHOLOGY {
         params.cell_neighborhood_permutations,
         params.cell_niche_radius_um,
         params.cell_niche_resolution,
+        params.cell_features,
+        params.cell_region_domain_model?.toString(),
         params.embedding_model,
         params.embedding_batch_size,
         params.slide_embedding_method,
@@ -74,9 +76,12 @@ workflow NFCORE_HISTOPATHOLOGY {
     cell_type_composition = HISTOPATHOLOGY.out.cell_type_composition // channel: [ val(meta), path(composition_csv) ]
     cell_neighborhoods = HISTOPATHOLOGY.out.cell_neighborhoods // channel: [ val(meta), path(neighborhood_csv) ]
     cell_niches       = HISTOPATHOLOGY.out.cell_niches      // channel: [ val(meta), path(niche_store) ]
+    cell_features     = HISTOPATHOLOGY.out.cell_features    // channel: [ val(meta), path(feature_store) ]
+    region_composition = HISTOPATHOLOGY.out.region_composition // channel: [ val(meta), path(composition_csv) ]
     embeddings        = HISTOPATHOLOGY.out.embeddings        // channel: [ val(meta), path(embedding_store) ]
     slide_embeddings  = HISTOPATHOLOGY.out.slide_embeddings  // channel: [ val(meta), path(slide_embedding) ]
     tissue_domains    = HISTOPATHOLOGY.out.tissue_domains    // channel: [ val(meta), path(domain_store) ]
+    tissue_regions    = HISTOPATHOLOGY.out.tissue_regions    // channel: [ val(meta), path(region_store) ]
     multiqc_report    = HISTOPATHOLOGY.out.multiqc_report    // channel: /path/to/multiqc_report.html
 }
 /*

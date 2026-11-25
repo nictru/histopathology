@@ -1,0 +1,32 @@
+{
+    "Emit separate morphology outputs and compose only when regions are supplied": {
+        "content": [
+            [
+                [
+                    "sample",
+                    "sample.classpose.cell_features.zarr"
+                ],
+                [
+                    "sample",
+                    "sample.classpose.cytoformer.cell_features.zarr"
+                ]
+            ],
+            [
+                [
+                    "sample",
+                    "sample.classpose.cytoformer.region_composition.csv"
+                ]
+            ],
+            [
+                "sample.classpose.cell_features.morphology_mqc.json",
+                "sample.classpose.cytoformer.cell_features.morphology_mqc.json",
+                "sample.classpose.cytoformer.cell_features.regions_mqc.json"
+            ]
+        ],
+        "timestamp": "2026-11-25T10:39:42.894668",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

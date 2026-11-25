@@ -1,0 +1,97 @@
+name: spatialdata_cellfeatures
+description: Measure cell or nucleus morphology and summarize their composition within optional tissue regions.
+keywords:
+  - histology
+  - cell morphology
+  - tissue regions
+tools:
+  - spatialdata:
+      description: A storage format and processing library for spatial omics data.
+      homepage: https://spatialdata.scverse.org/
+      documentation: https://spatialdata.scverse.org/en/stable/
+      licence: ["BSD-3-Clause"]
+  - shapely:
+      description: Manipulate and analyze planar geometric objects.
+      homepage: https://shapely.readthedocs.io/
+      licence: ["BSD-3-Clause"]
+input:
+  - - meta:
+        type: map
+        description: Slide metadata containing the sample ID.
+    - instances:
+        type: directory
+        description: Segmented cell or nucleus polygons and predicted cell types when available.
+        pattern: "*.zarr"
+    - slide:
+        type: directory
+        description: Calibrated original slide in a WSIData store.
+        pattern: "*.zarr"
+    - regions:
+        type: directory
+        description: Optional tissue region polygons and density denominators.
+        pattern: "*.tissue_regions.zarr"
+    - niches:
+        type: directory
+        description: Optional per-instance niche assignments for this cell-typing source.
+        pattern: "*.cell_niches.zarr"
+output:
+  features:
+    - - meta:
+          type: map
+          description: Slide metadata containing the sample ID.
+      - "${prefix}.cell_features.zarr":
+          type: directory
+          description: SpatialData store with original instance polygons and a linked morphology table.
+          pattern: "*.cell_features.zarr"
+  composition:
+    - - meta:
+          type: map
+          description: Slide metadata containing the sample ID.
+      - "${prefix}.region_composition.csv":
+          type: file
+          description: Optional counts, proportions, and densities for regions of the slide.
+          pattern: "*.region_composition.csv"
+  multiqc_files:
+    - "${prefix}.cell_features.*_mqc.json":
+        type: file
+        description: MultiQC reports for morphology distributions and regional composition when available.
+        pattern: "*_mqc.json"
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+topics:
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/arm64:
+      name: community.wave.seqera.io/library/pip_python_matplotlib_numpy_pruned:d120b8172d318a56
+      build_id: bd-d120b8172d318a56_1
+      scan_id: sc-ebd55ad836f8e2db_1
+    linux/amd64:
+      name: community.wave.seqera.io/library/pip_python_matplotlib_numpy_pruned:f47cf1913b2b3195
+      build_id: bd-f47cf1913b2b3195_1
+      scan_id: sc-aaba73123ef45a74_1
+  singularity:
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/pip_python_matplotlib_numpy_pruned:dedf438fa0e18648
+      build_id: bd-dedf438fa0e18648_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/47/47717b7764e33e509c321074e5d3a06d841722a5fea34494510ee7bc7ef88c5c/data
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/pip_python_matplotlib_numpy_pruned:6cbc0c18a9a63ed2
+      build_id: bd-6cbc0c18a9a63ed2_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/2b/2bacc7afedd39aabce34809c9dc500768099afb82dc345d800eb1400206e703c/data
+  conda:
+    linux/arm64:
+      lock_file: modules/local/spatialdata/cellfeatures/.conda-lock/linux_arm64-bd-d120b8172d318a56_1.txt
+    linux/amd64:
+      lock_file: modules/local/spatialdata/cellfeatures/.conda-lock/linux_amd64-bd-f47cf1913b2b3195_1.txt

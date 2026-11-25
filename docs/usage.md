@@ -133,6 +133,16 @@ When you select a paired tile encoder explicitly as well, the pipeline extracts 
 
 Set `--tissue_domain_resolution` to enable tissue domain maps. For example, `--embedding_model resnet50 --tissue_domain_resolution 0.3` clusters the ResNet50 tile embeddings for each slide. The pipeline maps every selected tile encoder, including encoders selected by learned slide aggregation methods. Higher Leiden resolutions generally produce finer partitions.
 
+## Tissue regions and cell features
+
+Set `--cell_region_domain_model` to select one of the tile encoders used for tissue domain mapping. The pipeline merges adjacent tiles from the same domain into regions and clips them to the primary tissue mask. The following settings also measure the NuLite nuclei and summarize their composition within each region.
+
+```bash
+--embedding_model resnet50 --tissue_domain_resolution 0.3 --cell_region_domain_model resnet50 --segmentation_model nulite
+```
+
+Set `--cell_features` with at least one segmentation model to measure instance morphology on its own. With tissue regions enabled, morphology and regional composition run for every segmentation model and for each enabled CytoFormer classification. If spatial cell niches are also enabled, the regional summaries include niche counts and densities for the corresponding predictions.
+
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:
