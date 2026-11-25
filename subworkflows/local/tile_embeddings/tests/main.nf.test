@@ -28,8 +28,9 @@ nextflow_workflow {
                 input[4] = 0.5
                 input[5] = 0
                 input[6] = 0.3
-                input[7] = ['resnet50', 'uni', 'uni2', 'lunit-bt', 'musk', 'conceptclip', 'conch_v1.5']
+                input[7] = ['resnet50', 'uni', 'uni2', 'lunit-bt', 'musk', 'conceptclip', 'conch_v1.5', 'chief', 'conch-madeleine']
                 input[8] = 8
+                input[9] = [chief: [256, 1.0], 'conch-madeleine': [256, 1.0]]
                 """
             }
         }
@@ -38,13 +39,14 @@ nextflow_workflow {
             assert workflow.success
             def tasks = workflow.trace.tasks().collect { it.name.tokenize(':').last().tokenize(' ').first() }
             assert tasks.count('EMBEDDING_TILETISSUES') == 4
-            assert tasks.count('LAZYSLIDE_FEATUREEXTRACTION') == 14
-            assert tasks.size() == 18
-            def stores = workflow.out.embeddings.collect { meta, store ->
-                assert path(store).fileName.toString().startsWith(meta.id + '.')
+            assert tasks.count('EMBEDDING_TILETISSUES_10X') == 2
+            assert tasks.count('LAZYSLIDE_FEATUREEXTRACTION') == 18
+            assert tasks.size() == 24
+            def stores = workflow.out.embeddings.collect { meta, store, model ->
+                assert path(store).fileName.toString() == "${meta.id}.${model}.embeddings.zarr"
                 path(store).fileName.toString()
             }.sort()
-            def models = ['conceptclip', 'conch_v1.5', 'lunit-bt', 'musk', 'resnet50', 'uni', 'uni2']
+            def models = ['chief', 'conceptclip', 'conch-madeleine', 'conch_v1.5', 'lunit-bt', 'musk', 'resnet50', 'uni', 'uni2']
             assert stores == ['slide-a', 'slide-b'].collectMany { sample ->
                 models.collect { model -> "${sample}.${model}.embeddings.zarr".toString() }
             }

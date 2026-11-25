@@ -64,7 +64,8 @@ nextflow_process {
 
         then {
             assert process.success
-            def results = process.out.embeddings.sort { it[0].id }.collect { meta, store ->
+            def results = process.out.embeddings.sort { it[0].id }.collect { meta, store, model ->
+                assert model == 'resnet50'
                 def root = path(store)
                 def attrs = path(root.resolve('zarr.json').toString()).json.attributes
                 def tileCount = attrs.tile_embeddings.tile_count

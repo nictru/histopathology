@@ -59,6 +59,10 @@ Find per-slide scores in `segmentation/<sample>.segmentation_agreement.csv`. The
 
 Undefined scores appear as dashes in the heatmaps and empty fields in the CSV.
 
+### Slide embeddings
+
+Find one AnnData file per slide, tile encoder, and aggregation method in `slide_embeddings/<sample>.<tile_encoder>.<method>.slide_embedding.h5ad`. `X` contains one row for the slide. `uns['slide_embedding']` records the sample ID, tile encoder, method, and number of input tiles. `uns['tile_spec']` records the grid when tiles are available. A slide with no eligible tiles has zero rows and a tile count of zero.
+
 ### Pipeline information
 
 <details markdown="1">

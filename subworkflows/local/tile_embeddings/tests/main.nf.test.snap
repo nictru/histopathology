@@ -2,14 +2,18 @@
     "Run each selected encoder on every sample - stub": {
         "content": [
             [
+                "slide-a.chief.embeddings.zarr",
                 "slide-a.conceptclip.embeddings.zarr",
+                "slide-a.conch-madeleine.embeddings.zarr",
                 "slide-a.conch_v1.5.embeddings.zarr",
                 "slide-a.lunit-bt.embeddings.zarr",
                 "slide-a.musk.embeddings.zarr",
                 "slide-a.resnet50.embeddings.zarr",
                 "slide-a.uni.embeddings.zarr",
                 "slide-a.uni2.embeddings.zarr",
+                "slide-b.chief.embeddings.zarr",
                 "slide-b.conceptclip.embeddings.zarr",
+                "slide-b.conch-madeleine.embeddings.zarr",
                 "slide-b.conch_v1.5.embeddings.zarr",
                 "slide-b.lunit-bt.embeddings.zarr",
                 "slide-b.musk.embeddings.zarr",
@@ -18,7 +22,7 @@
                 "slide-b.uni2.embeddings.zarr"
             ]
         ],
-        "timestamp": "2026-11-24T18:55:19.372567",
+        "timestamp": "2026-11-25T08:19:40.885171",
         "meta": {
             "nf-test": "0.9.4",
             "nextflow": "26.10.7"

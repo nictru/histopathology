@@ -1,0 +1,79 @@
+name: lazyslide_featureaggregation
+description: Aggregate tissue tile embeddings into one whole-slide embedding.
+keywords:
+  - histology
+  - embeddings
+  - feature aggregation
+tools:
+  - lazyslide:
+      description: Whole-slide image analysis for digital pathology.
+      homepage: https://github.com/rendeirolab/LazySlide
+      documentation: https://lazyslide.readthedocs.io/
+      licence: ["MIT"]
+      identifier: biotools:lazyslide
+input:
+  - - meta:
+        type: map
+        description: Sample metadata containing the slide ID.
+    - embeddings:
+        type: directory
+        description: SpatialData store containing tile geometries and a linked AnnData feature table.
+        pattern: "*.embeddings.zarr"
+    - slide:
+        type: directory
+        description: Matching WSIData store defining the slide coordinate system.
+        pattern: "*.zarr"
+    - tile_model:
+        type: string
+        description: Encoder used to generate the tile embeddings.
+    - method:
+        type: string
+        description: Pooling reduction or learned slide encoder.
+output:
+  embeddings:
+    - - meta:
+          type: map
+          description: Sample metadata containing the slide ID.
+      - "${prefix}.${tile_model}.${method}.slide_embedding.h5ad":
+          type: file
+          description: AnnData with one embedding row for the slide or zero rows when no tiles are available.
+          pattern: "*.slide_embedding.h5ad"
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+topics:
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/arm64:
+      name: community.wave.seqera.io/library/ecos_pip_python_pytorch-cpu_pruned:134a18d954020251
+      build_id: bd-134a18d954020251_1
+      scan_id: sc-96ff7c404e778fac_1
+    linux/amd64:
+      name: community.wave.seqera.io/library/ecos_pip_python_pytorch-cpu_pruned:2d223d1a21bfcdb1
+      build_id: bd-2d223d1a21bfcdb1_1
+      scan_id: sc-a2560f0371f55b4d_1
+  singularity:
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/ecos_pip_python_pytorch-cpu_pruned:ae024ea4d7f647b4
+      build_id: bd-ae024ea4d7f647b4_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/04/04d1e609a9cb2fe4c781e2dd782a6423c4332de81d3221cdaafd804283aa6ce8/data
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/ecos_pip_python_pytorch-cpu_pruned:9a65cbe8c72b6219
+      build_id: bd-9a65cbe8c72b6219_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/ca/ca20b17069148713b0fb27c87afa1f5dfb2ded1cfb54c5da7e3f4d45e7b9b29c/data
+  conda:
+    linux/amd64:
+      lock_file: modules/local/lazyslide/featureaggregation/.conda-lock/linux_amd64-bd-2d223d1a21bfcdb1_1.txt
+    linux/arm64:
+      lock_file: modules/local/lazyslide/featureaggregation/.conda-lock/linux_arm64-bd-134a18d954020251_1.txt

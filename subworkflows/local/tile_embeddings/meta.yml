@@ -39,10 +39,13 @@ input:
   - batch_size:
       type: integer
       description: Number of tiles per inference batch.
+  - grid_overrides:
+      type: map
+      description: Tile size and resolution to use for encoders paired with learned slide encoders.
 output:
   - embeddings:
       type: file
-      description: SpatialData stores with tile geometries and embedding tables in tuples of metadata and store paths.
+      description: SpatialData stores with tile geometries and embedding tables in tuples of metadata, store paths, and tile encoder names.
       pattern: "*.embeddings.zarr"
 authors:
   - "@nictru"

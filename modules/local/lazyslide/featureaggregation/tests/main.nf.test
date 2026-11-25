@@ -1,0 +1,35 @@
+nextflow_process {
+    name "Test LAZYSLIDE_FEATUREAGGREGATION"
+    script "../main.nf"
+    process "LAZYSLIDE_FEATUREAGGREGATION"
+
+    tag "modules"
+    tag "modules_local"
+    tag "lazyslide/featureaggregation"
+
+    test("Emit separate pooled and learned embeddings per slide") {
+        options "-stub-run"
+
+        when {
+            process {
+                """
+                def root = java.nio.file.Files.createTempDirectory('slide-embedding-inputs')
+                def slide = java.nio.file.Files.createDirectory(root.resolve('sample.zarr'))
+                def tiles = java.nio.file.Files.createDirectory(root.resolve('sample.titan.embeddings.zarr'))
+                input[0] = channel.of('mean', 'titan').map { method ->
+                    [[id: 'sample'], tiles, slide, 'titan', method]
+                }
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def outputs = process.out.embeddings.collect { meta, result ->
+                [meta.id, path(result).fileName.toString()]
+            }.sort { it[1] }
+            assert outputs.size() == 2
+            assert snapshot(outputs).match()
+        }
+    }
+}

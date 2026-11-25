@@ -11,6 +11,7 @@ include { SEGMENTATION           } from '../subworkflows/local/segmentation/main
 include { CYTOFORMER_CLASSIFY    } from '../modules/local/cytoformer/classify/main'
 include { STAIN_NORMALIZATION    } from '../subworkflows/local/stain_normalization/main'
 include { TILE_EMBEDDINGS         } from '../subworkflows/local/tile_embeddings/main'
+include { LAZYSLIDE_FEATUREAGGREGATION } from '../modules/local/lazyslide/featureaggregation/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -40,6 +41,7 @@ workflow HISTOPATHOLOGY {
     cytoformer_organ
     embedding_model
     embedding_batch_size
+    slide_embedding_method
     multiqc_config
     multiqc_logo
     multiqc_methods_description
@@ -119,7 +121,32 @@ workflow HISTOPATHOLOGY {
     def embedding_models = (!embedding_model || embedding_model == 'none')
         ? []
         : embedding_model.split(',', -1).collect { model -> model.trim() }.unique()
+    def slide_methods = (!slide_embedding_method || slide_embedding_method == 'none')
+        ? []
+        : slide_embedding_method.split(',', -1).collect { method -> method.trim() }.unique()
+    def pooling_methods = ['mean', 'median', 'max']
+    def slide_pairs = [
+        chief:     [tile_model: 'chief',               grid: [256, 1.0]],
+        madeleine: [tile_model: 'conch-madeleine',      grid: [256, 1.0]],
+        moozy:     [tile_model: 'lunit-dino-s8-moozy',  grid: [224, 0.5]],
+        prism:     [tile_model: 'virchow',              grid: [224, 0.5]],
+        titan:     [tile_model: 'titan',                grid: [512, 0.5]],
+    ]
+    def unsupported_methods = slide_methods - pooling_methods - slide_pairs.keySet()
+    if (unsupported_methods) {
+        error("Unsupported slide embedding methods: ${unsupported_methods.join(', ')}.")
+    }
+    def learned_methods = slide_methods - pooling_methods
+    def required_grids = learned_methods.collectEntries { method ->
+        def pair = slide_pairs[method]
+        [(pair.tile_model): pair.grid]
+    }
+    embedding_models = (embedding_models + required_grids.keySet()).unique()
+    if (slide_methods && !embedding_models) {
+        error('Slide pooling requires --embedding_model or a learned --slide_embedding_method.')
+    }
     def ch_embeddings = channel.empty()
+    def ch_slide_embeddings = channel.empty()
     if (embedding_models) {
         def unsupported_models = embedding_models.findAll { model -> !(model ==~ /[a-z0-9][a-z0-9_.-]*/) || model == 'none' }
         if (unsupported_models) {
@@ -135,8 +162,19 @@ workflow HISTOPATHOLOGY {
             tile_background_fraction,
             embedding_models,
             embedding_batch_size,
+            required_grids,
         )
-        ch_embeddings = TILE_EMBEDDINGS.out.embeddings
+        ch_embeddings = TILE_EMBEDDINGS.out.embeddings.map { meta, store, _model -> [meta, store] }
+        if (slide_methods) {
+            def ch_slide_inputs = TILE_EMBEDDINGS.out.embeddings
+                .combine(ch_analysis_slides, by: 0)
+                .flatMap { meta, store, model, slide ->
+                    slide_methods.findAll { method -> method in pooling_methods || slide_pairs[method].tile_model == model }
+                        .collect { method -> [meta, store, slide, model, method] }
+                }
+            LAZYSLIDE_FEATUREAGGREGATION(ch_slide_inputs)
+            ch_slide_embeddings = LAZYSLIDE_FEATUREAGGREGATION.out.embeddings
+        }
     }
 
     def ch_versions = channel.empty()
@@ -206,6 +244,7 @@ workflow HISTOPATHOLOGY {
     cell_types        = ch_cell_types                                             // channel: [ val(meta), path(typed_instances) ]
     segmentation_agreement = ch_segmentation_agreement                            // channel: [ val(meta), path(agreement_csv) ]
     embeddings        = ch_embeddings                                             // channel: [ val(meta), path(embedding_store) ]
+    slide_embeddings  = ch_slide_embeddings                                       // channel: [ val(meta), path(slide_embedding) ]
     multiqc_report    = MULTIQC.out.report.map { _meta, report -> [report] }.toList() // channel: /path/to/multiqc_report.html
     versions          = ch_versions                                              // channel: [ path(versions.yml) ]
 }

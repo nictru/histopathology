@@ -101,6 +101,22 @@ Registry keys supported by `--embedding_model`:
 
 Each `<OUTDIR>/embeddings/<sample>.<model>.embeddings.zarr` contains the tile geometries and a linked AnnData table named `<model>_tiles`. The table contains one row per tile, with a `tile_id` that identifies its geometry. Slides without eligible tiles produce a store with a tile count of zero.
 
+## Slide embeddings
+
+Set `--slide_embedding_method` to one or more comma-separated methods. For example, `--embedding_model resnet50 --slide_embedding_method mean,median,max` pools each feature across the slide's tiles. Aggregation is disabled by default.
+
+Learned methods select their paired tile encoder and non-overlapping grid automatically. For example, `--slide_embedding_method mean,titan` produces both a mean-pooled and a TITAN embedding from the same CONCH v1.5 tile features. Pooling runs on all tile encoders selected by either flag.
+
+| Learned method | Paired tile encoder | Tile size | Resolution |
+| --- | --- | --- | --- |
+| `chief` | `chief` | 256 px | 1.0 µm/px |
+| `madeleine` | `conch-madeleine` | 256 px | 1.0 µm/px |
+| `moozy` | `lunit-dino-s8-moozy` | 224 px | 0.5 µm/px |
+| `prism` | `virchow` | 224 px | 0.5 µm/px |
+| `titan` | `titan` (CONCH v1.5) | 512 px | 0.5 µm/px |
+
+When you select a paired tile encoder explicitly as well, the pipeline extracts its features once at the learned method's grid settings. Request access to any gated tile or slide models and set the `HF_TOKEN` Nextflow secret. Slide aggregation runs on CPU.
+
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:

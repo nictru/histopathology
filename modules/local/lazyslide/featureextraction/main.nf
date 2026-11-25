@@ -31,7 +31,7 @@ process LAZYSLIDE_FEATUREEXTRACTION {
     val batch_size
 
     output:
-    tuple val(meta), path("${prefix}.${model}.embeddings.zarr"), emit: embeddings
+    tuple val(meta), path("${prefix}.${model}.embeddings.zarr"), val(model), emit: embeddings
     path "versions.yml", emit: versions, topic: versions
 
     when:

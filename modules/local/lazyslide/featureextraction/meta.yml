@@ -38,6 +38,9 @@ output:
           type: directory
           description: SpatialData store with tile geometries, a linked AnnData feature table, and model provenance.
           pattern: "*.embeddings.zarr"
+      - model:
+          type: string
+          description: Tile encoder used to generate the store.
   versions:
     - versions.yml:
         type: file

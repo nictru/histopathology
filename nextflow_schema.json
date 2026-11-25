@@ -104,6 +104,12 @@
                     "minimum": 1,
                     "default": 16,
                     "description": "Number of tiles per inference batch."
+                },
+                "slide_embedding_method": {
+                    "type": "string",
+                    "default": "none",
+                    "pattern": "^(none|(mean|median|max|chief|madeleine|moozy|prism|titan)(, *(mean|median|max|chief|madeleine|moozy|prism|titan))*)$",
+                    "description": "Comma-separated slide embedding methods. Pooling uses the selected tile embeddings. Learned methods automatically select their paired tile encoders."
                 }
             }
         },
