@@ -1,0 +1,27 @@
+{
+    "Emit distinct native and CytoFormer composition outputs": {
+        "content": [
+            [
+                [
+                    "sample",
+                    "sample.classpose.cell_type_composition.csv"
+                ],
+                [
+                    "sample",
+                    "sample.classpose.cytoformer.cell_type_composition.csv"
+                ]
+            ],
+            [
+                "sample.classpose.cell_type_proportions_mqc.json",
+                "sample.classpose.cell_type_table_mqc.json",
+                "sample.classpose.cytoformer.cell_type_proportions_mqc.json",
+                "sample.classpose.cytoformer.cell_type_table_mqc.json"
+            ]
+        ],
+        "timestamp": "2026-11-25T08:37:40.66446",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

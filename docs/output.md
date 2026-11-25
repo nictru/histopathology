@@ -40,6 +40,7 @@ The report includes these views for each slide.
 - **Stain normalization** shows matching original and normalized slide thumbnails when normalization runs.
 - **Segmentation masks** show semi-transparent cell or nucleus masks on a crop of the original slide for each selected model. Each crop centers on a detected instance.
 - **Cell type segmentation** shows the same crop with instances colored by predicted class when the model returns cell-type labels.
+- **Cell-type composition and density** shows a sortable metrics table and stacked bars of class proportions for each slide and model.
 - **CytoFormer previews** appear in **Cell type segmentation** when `--cytoformer_organ` is set. Each preview identifies the source segmenter and organ head.
 - **Segmentation agreement** appears when two or more segmentation methods run. Switch metric tabs to compare methods on a fixed 0–1 scale. Each heatmap uses the same hierarchical order, based on instance F1. The dendrogram groups methods with detections, and methods without detections appear after them.
 
@@ -48,6 +49,12 @@ The report embeds thumbnails and detail crops. Use the corresponding Zarr output
 ### CytoFormer cell types
 
 Find the classified instances in `cell_types/<sample>.<segmentation_model>.cytoformer.zarr`. Each store preserves the source `nuclei` or `cells` polygons and adds `cytoformer_cell_type` and `cytoformer_probability` to the shapes layer. The `cell_typing` metadata records the organ, checkpoint revision, device, and instance count.
+
+### Cell-type composition and density
+
+Find one CSV per slide and segmentation model under `cell_types/`. CytoFormer adds a separate CSV with `.cytoformer.cell_type_composition.csv` in the filename. Each CSV contains the total instance count and one row per observed class. Instances without a class appear under **Unclassified**. Proportions use all detected instances as the denominator and appear as fractions in CSV and percentages in MultiQC.
+
+Density divides the instance count by the area of the primary tissue mask in mm². The pipeline counts foreground pixels at full resolution and converts their area using the original slide's pixel size. The CSV records the tissue method and area. Proportion is blank when no instances were detected, and density is blank when the tissue area is zero.
 
 ### Segmentation agreement
 

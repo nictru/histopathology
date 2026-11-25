@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
+name: spatialdata_celltypecomposition
+description: Summarize cell counts, proportions, and tissue-normalized densities for a slide.
+keywords:
+  - histology
+  - cell types
+  - density
+tools:
+  - spatialdata:
+      description: A storage format and processing library for spatial omics data.
+      homepage: https://spatialdata.scverse.org/
+      documentation: https://spatialdata.scverse.org/en/stable/
+      licence: ["BSD-3-Clause"]
+input:
+  - - meta:
+        type: map
+        description: Slide metadata with the sample identifier.
+    - instances:
+        type: directory
+        description: Cell or nucleus polygons with segmentation and optional classification metadata.
+        pattern: "*.zarr"
+    - slide:
+        type: directory
+        description: Original slide store with calibrated level-0 pixel size.
+        pattern: "*.zarr"
+    - tissue:
+        type: directory
+        description: Primary tissue mask in slide coordinates.
+        pattern: "*.tissue.zarr"
+output:
+  composition:
+    - - meta:
+          type: map
+          description: Slide metadata with the sample identifier.
+      - "${prefix}.cell_type_composition.csv":
+          type: file
+          description: Counts, proportions, and densities for all instances and each observed class.
+          pattern: "*.cell_type_composition.csv"
+  multiqc_files:
+    - "${prefix}.cell_type_*_mqc.json":
+        type: file
+        description: Native MultiQC table and composition bar plot data.
+        pattern: "*_mqc.json"
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+topics:
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/arm64:
+      name: community.wave.seqera.io/library/pip_python_matplotlib_numpy_pruned:d120b8172d318a56
+      build_id: bd-d120b8172d318a56_1
+      scan_id: sc-ebd55ad836f8e2db_1
+    linux/amd64:
+      name: community.wave.seqera.io/library/pip_python_matplotlib_numpy_pruned:f47cf1913b2b3195
+      build_id: bd-f47cf1913b2b3195_1
+      scan_id: sc-aaba73123ef45a74_1
+  singularity:
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/pip_python_matplotlib_numpy_pruned:dedf438fa0e18648
+      build_id: bd-dedf438fa0e18648_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/47/47717b7764e33e509c321074e5d3a06d841722a5fea34494510ee7bc7ef88c5c/data
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/pip_python_matplotlib_numpy_pruned:6cbc0c18a9a63ed2
+      build_id: bd-6cbc0c18a9a63ed2_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/2b/2bacc7afedd39aabce34809c9dc500768099afb82dc345d800eb1400206e703c/data
+  conda:
+    linux/arm64:
+      lock_file: modules/local/spatialdata/celltypecomposition/.conda-lock/linux_arm64-bd-d120b8172d318a56_1.txt
+    linux/amd64:
+      lock_file: modules/local/spatialdata/celltypecomposition/.conda-lock/linux_amd64-bd-f47cf1913b2b3195_1.txt

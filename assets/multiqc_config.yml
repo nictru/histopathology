@@ -17,6 +17,8 @@ report_section_order:
     order: 1000
   histopathology_segmentation_agreement:
     order: 999
+  histopathology_cell_type_composition:
+    order: 998
   "nf-core-histopathology-methods-description":
     order: -1000
   software_versions:

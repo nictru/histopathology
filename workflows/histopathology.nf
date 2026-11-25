@@ -9,6 +9,7 @@ include { LAZYSLIDE_TILETISSUES   } from '../modules/local/lazyslide/tiletissues
 include { QC                     } from '../subworkflows/local/qc/main'
 include { SEGMENTATION           } from '../subworkflows/local/segmentation/main'
 include { CYTOFORMER_CLASSIFY    } from '../modules/local/cytoformer/classify/main'
+include { SPATIALDATA_CELLTYPECOMPOSITION } from '../modules/local/spatialdata/celltypecomposition/main'
 include { STAIN_NORMALIZATION    } from '../subworkflows/local/stain_normalization/main'
 include { TILE_EMBEDDINGS         } from '../subworkflows/local/tile_embeddings/main'
 include { LAZYSLIDE_FEATUREAGGREGATION } from '../modules/local/lazyslide/featureaggregation/main'
@@ -117,6 +118,9 @@ workflow HISTOPATHOLOGY {
         ch_cell_types = CYTOFORMER_CLASSIFY.out.cell_types
         ch_multiqc_files = ch_multiqc_files.mix(CYTOFORMER_CLASSIFY.out.multiqc_files)
     }
+
+    SPATIALDATA_CELLTYPECOMPOSITION(ch_cells.mix(ch_cell_types).combine(ch_slides_with_masks, by: 0))
+    ch_multiqc_files = ch_multiqc_files.mix(SPATIALDATA_CELLTYPECOMPOSITION.out.multiqc_files)
 
     def embedding_models = (!embedding_model || embedding_model == 'none')
         ? []
@@ -242,6 +246,7 @@ workflow HISTOPATHOLOGY {
     slide_qc          = QC.out.slide_qc                                           // channel: [ val(meta), path(artifacts) ]
     cells             = ch_cells                                                  // channel: [ val(meta), path(instances) ]
     cell_types        = ch_cell_types                                             // channel: [ val(meta), path(typed_instances) ]
+    cell_type_composition = SPATIALDATA_CELLTYPECOMPOSITION.out.composition         // channel: [ val(meta), path(composition_csv) ]
     segmentation_agreement = ch_segmentation_agreement                            // channel: [ val(meta), path(agreement_csv) ]
     embeddings        = ch_embeddings                                             // channel: [ val(meta), path(embedding_store) ]
     slide_embeddings  = ch_slide_embeddings                                       // channel: [ val(meta), path(slide_embedding) ]

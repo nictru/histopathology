@@ -19,7 +19,7 @@ nextflow_pipeline {
             def stable_content = getAllFilesFromDir(params.outdir, ignoreFile: 'tests/.nftignore')
             assert workflow.success
             def report = path("$outputDir/multiqc/multiqc_report.html").text
-            def report_sections = ['tissue', 'slide_qc', 'tile_qc', 'normalization', 'segmentation']
+            def report_sections = ['tissue', 'slide_qc', 'tile_qc', 'normalization', 'segmentation', 'cell_type_composition']
             assertAll(
                 { assert report_sections.every { section -> report.contains("id=\"histopathology_${section}\"") } },
                 { assert snapshot(

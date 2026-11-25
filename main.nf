@@ -66,6 +66,7 @@ workflow NFCORE_HISTOPATHOLOGY {
     slide_qc          = HISTOPATHOLOGY.out.slide_qc          // channel: [ val(meta), path(artifacts) ]
     cells             = HISTOPATHOLOGY.out.cells             // channel: [ val(meta), path(instances) ]
     cell_types        = HISTOPATHOLOGY.out.cell_types        // channel: [ val(meta), path(typed_instances) ]
+    cell_type_composition = HISTOPATHOLOGY.out.cell_type_composition // channel: [ val(meta), path(composition_csv) ]
     embeddings        = HISTOPATHOLOGY.out.embeddings        // channel: [ val(meta), path(embedding_store) ]
     slide_embeddings  = HISTOPATHOLOGY.out.slide_embeddings  // channel: [ val(meta), path(slide_embedding) ]
     multiqc_report    = HISTOPATHOLOGY.out.multiqc_report    // channel: /path/to/multiqc_report.html

@@ -1,0 +1,36 @@
+nextflow_process {
+    name "Test SPATIALDATA_CELLTYPECOMPOSITION"
+    script "../main.nf"
+    process "SPATIALDATA_CELLTYPECOMPOSITION"
+
+    tag "modules"
+    tag "modules_local"
+    tag "spatialdata/celltypecomposition"
+
+    test("Emit distinct native and CytoFormer composition outputs") {
+        options "-stub-run"
+
+        when {
+            process {
+                """
+                def root = java.nio.file.Files.createTempDirectory('cell-composition-inputs')
+                def slide = java.nio.file.Files.createDirectory(root.resolve('sample.zarr'))
+                def tissue = java.nio.file.Files.createDirectory(root.resolve('sample.otsu.tissue.zarr'))
+                def inputs = ['sample.classpose.cells.zarr', 'sample.classpose.cytoformer.zarr'].collect { name ->
+                    [[id: 'sample'], java.nio.file.Files.createDirectory(root.resolve(name)), slide, tissue]
+                }
+                input[0] = channel.fromList(inputs)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def csvs = process.out.composition.collect { meta, csv -> [meta.id, path(csv).fileName.toString()] }.sort { it[1] }
+            def reports = process.out.multiqc_files.flatten().collect { path(it).fileName.toString() }.sort()
+            assert csvs.size() == 2
+            assert reports.size() == 4
+            assert snapshot(csvs, reports).match()
+        }
+    }
+}
