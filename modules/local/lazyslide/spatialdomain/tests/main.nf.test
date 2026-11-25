@@ -1,0 +1,36 @@
+nextflow_process {
+    name "Test LAZYSLIDE_SPATIALDOMAIN"
+    script "../main.nf"
+    process "LAZYSLIDE_SPATIALDOMAIN"
+
+    tag "modules"
+    tag "modules_local"
+    tag "lazyslide/spatialdomain"
+
+    test("Emit separate domain maps and MultiQC plots for each encoder") {
+        options "-stub-run"
+
+        when {
+            process {
+                """
+                def root = java.nio.file.Files.createTempDirectory('spatialdomain-inputs')
+                def slide = java.nio.file.Files.createDirectory(root.resolve('sample.zarr'))
+                input[0] = channel.fromList(['resnet50', 'uni'].collect { model ->
+                    def embeddings = java.nio.file.Files.createDirectory(root.resolve(model + '.embeddings.zarr'))
+                    [[id: 'sample'], embeddings, model, slide]
+                })
+                input[1] = 0.3
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def maps = process.out.domains.collect { meta, store -> [meta.id, path(store).fileName.toString()] }.sort { it[1] }
+            def plots = process.out.multiqc_files.collect { path(it).fileName.toString() }.sort()
+            assert maps.size() == 2
+            assert plots.size() == 2
+            assert snapshot(maps, plots).match()
+        }
+    }
+}

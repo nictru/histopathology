@@ -1,31 +1,26 @@
 #!/usr/bin/env python3
 
-import base64
 import csv
 import json
 from dataclasses import dataclass
 from hashlib import sha256
 from html import escape
 from importlib.metadata import version
-from io import BytesIO
 from itertools import combinations
 from pathlib import Path
 
-import matplotlib
 import numpy as np
 import shapely
-from matplotlib.figure import Figure
-from scipy.cluster.hierarchy import dendrogram, leaves_list, linkage
+from scipy.cluster.hierarchy import leaves_list, linkage
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import min_weight_full_bipartite_matching
 from scipy.spatial.distance import squareform
 from spatialdata import read_zarr, transform
 from spatialdata.transformations import Identity, get_transformation
 
-matplotlib.use("Agg")
-
 IOU_THRESHOLD = 0.5
 QUERY_BATCH_SIZE = 4096
+SECTION = "histopathology_segmentation_agreement"
 METRICS = {
     "foreground_dice": "Foreground Dice",
     "foreground_iou": "Foreground IoU",
@@ -192,7 +187,7 @@ def cluster_methods(methods, rows):
     ]
     empty = [method for method in methods if method not in detected]
     if len(detected) < 2:
-        return methods, None
+        return detected + empty
 
     distances = np.zeros((len(detected), len(detected)))
     for i, j in combinations(range(len(detected)), 2):
@@ -200,55 +195,13 @@ def cluster_methods(methods, rows):
             1 - rows[detected[i], detected[j]]["instance_f1"]
         )
     tree = linkage(squareform(distances), method="average", optimal_ordering=True)
-    return [detected[index] for index in leaves_list(tree)] + empty, tree
+    return [detected[index] for index in leaves_list(tree)] + empty
 
 
-def heatmap_png(methods, rows, metric, label, tree):
-    values = np.array(
-        [[rows[left, right][metric] for right in methods] for left in methods],
-        dtype=float,
-    )
-    figure = Figure(figsize=(5.8, 4.8), layout="constrained")
-    tiers = (1, 4) if tree is not None else (4,)
-    layout = figure.add_gridspec(
-        len(tiers), 2, height_ratios=tiers, width_ratios=(20, 1)
-    )
-    ax = figure.add_subplot(layout[-1, 0])
-    if tree is not None:
-        branch = figure.add_subplot(layout[0, 0], sharex=ax)
-        dendrogram(tree, ax=branch, no_labels=True, link_color_func=lambda _: "#52647d")
-        branch.set_axis_off()
-
-    edge = 10 * len(methods)
-    centers = np.arange(5, edge, 10)
-    palette = matplotlib.colormaps["viridis"].with_extremes(bad="#e2e8f0")
-    image = ax.imshow(
-        values, cmap=palette, vmin=0, vmax=1, extent=(0, edge, edge, 0), aspect="auto"
-    )
-    ax.set_xticks(centers, methods, rotation=25, ha="right")
-    ax.set_yticks(centers, methods)
-    ax.set(xlabel="Comparison method", ylabel="Reference method")
-    ax.set_xlim(0, edge)
-    for (row, column), value in np.ndenumerate(values):
-        missing = np.isnan(value)
-        text = "—" if missing else f"{value:.2f}"
-        color = "#182235" if missing or value >= 0.55 else "white"
-        ax.text(
-            centers[column], centers[row], text, ha="center", va="center", color=color
-        )
-    colorbar = figure.add_subplot(layout[-1, 1])
-    figure.colorbar(image, cax=colorbar, ticks=(0, 0.25, 0.5, 0.75, 1), label=label)
-    output = BytesIO()
-    figure.savefig(output, format="png", dpi=110)
-    return base64.b64encode(output.getvalue()).decode("ascii")
-
-
-def report_tabs(prefix, methods, rows):
-    ordered, tree = cluster_methods(methods, rows)
-    anchor = "agreement-" + sha256(prefix.encode()).hexdigest()[:16]
+def metric_tabs(group):
     buttons, panels = [], []
     for index, (metric, label) in enumerate(METRICS.items()):
-        panel = f"{anchor}-{metric}"
+        panel = f"{group}-{metric}-panel"
         active = " active" if index == 0 else ""
         selected = "true" if index == 0 else "false"
         buttons.append(
@@ -256,21 +209,101 @@ def report_tabs(prefix, methods, rows):
             f'data-bs-toggle="tab" data-bs-target="#{panel}" role="tab" '
             f'aria-controls="{panel}" aria-selected="{selected}">{label}</button>'
         )
-        image = heatmap_png(ordered, rows, metric, label, tree)
         panels.append(
-            f'<div class="tab-pane{active}" id="{panel}" role="tabpanel" '
-            f'aria-labelledby="{panel}-tab" tabindex="0">'
-            '<div class="mqc-custom-content-image">'
-            f'<img src="data:image/png;base64,{image}" alt="{escape(label)} by segmentation method" '
-            'style="max-width:100%;height:auto"></div></div>'
+            f'<div class="tab-pane{active}" id="{panel}" role="tabpanel" tabindex="0" '
+            f'aria-labelledby="{panel}-tab" data-agreement-section="{group}-{metric}"></div>'
         )
+
+    # MultiQC custom content creates one section per heatmap. Move the rendered
+    # plots into tabs when the default template exposes its section wrappers.
     return (
+        f'<div id="{group}-tabs" hidden>'
         '<div class="nav nav-tabs" role="tablist" aria-label="Segmentation agreement metrics">'
         + "".join(buttons)
         + '</div><div class="tab-content">'
         + "".join(panels)
-        + "</div>"
+        + "</div></div>"
+        + f'<script>document.addEventListener("DOMContentLoaded", () => {{'
+        f'const tabs = document.getElementById("{group}-tabs");'
+        """
+        const panels = Array.from(tabs.querySelectorAll("[data-agreement-section]"));
+        const sections = panels.map(panel =>
+            document.getElementById("mqc-section-wrapper-" + panel.dataset.agreementSection)
+        );
+        const plots = sections.map(section => section?.querySelector(".mqc-section-plot"));
+        if (plots.some(plot => !plot)) return;
+        panels.forEach((panel, index) => {
+            panel.append(plots[index]);
+            if (index) {
+                sections[index].hidden = true;
+                const link = document.querySelector('.mqc-nav a[href="#' +
+                    panel.dataset.agreementSection + '"]');
+                if (link) link.closest("li").hidden = true;
+            }
+        });
+        tabs.hidden = false;
+        tabs.addEventListener("shown.bs.tab", event => {
+            const panel = document.getElementById(event.target.getAttribute("aria-controls"));
+            const plot = panel.querySelector(".hc-plot.not_rendered");
+            if (plot) window.renderPlot?.(plot.id);
+        });
+        });</script>
+        """
     )
+
+
+def write_heatmaps(prefix, sample, methods, rows):
+    group = "agreement-" + sha256(prefix.encode()).hexdigest()[:16]
+    ordered = cluster_methods(methods, rows)
+    for index, (metric, label) in enumerate(METRICS.items()):
+        section_id = f"{group}-{metric}"
+        payload = {
+            "id": section_id,
+            "parent_id": SECTION,
+            "parent_name": "Segmentation agreement",
+            "parent_description": (
+                "Foreground scores compare the union of detected polygons. Instance scores "
+                f"use one-to-one matches at IoU ≥ {IOU_THRESHOLD:g}. Both axes use the "
+                "same average-linkage order based on instance F1. Methods without "
+                "detections appear last. Blank cells represent undefined scores."
+            ),
+            "section_name": escape(sample)
+            if index == 0
+            else f"{escape(sample)} · {label}",
+            "section_anchor": section_id,
+            "plot_type": "heatmap",
+            "xcats": ordered,
+            "ycats": ordered,
+            "pconfig": {
+                "id": f"{section_id}-heatmap",
+                "title": f"{sample}: {label}",
+                "xlab": "Comparison method",
+                "ylab": "Reference method",
+                "zlab": label,
+                "xcats_samples": False,
+                "ycats_samples": False,
+                "cluster_rows": False,
+                "cluster_cols": False,
+                "display_values": True,
+                "min": 0,
+                "max": 1,
+                "colstops": [
+                    [0, "#440154"],
+                    [0.25, "#3b528b"],
+                    [0.5, "#21918c"],
+                    [0.75, "#5ec962"],
+                    [1, "#fde725"],
+                ],
+            },
+            "data": [
+                [rows[left, right][metric] for right in ordered] for left in ordered
+            ],
+        }
+        if index == 0:
+            payload["description"] = metric_tabs(group)
+        Path(f"{prefix}.segmentation_agreement.{metric}_mqc.json").write_text(
+            json.dumps(payload, allow_nan=False), encoding="utf-8"
+        )
 
 
 prefix = "${prefix}"
@@ -292,25 +325,8 @@ with Path(f"{prefix}.segmentation_agreement.csv").open(
     writer.writeheader()
     writer.writerows(rows[key] for key in sorted(rows))
 
-payload = {
-    "id": f"{prefix}.segmentation_agreement",
-    "parent_id": "histopathology_segmentation_agreement",
-    "parent_name": "Segmentation agreement",
-    "parent_description": (
-        "Pairwise comparison of segmentation methods on each slide. Foreground scores "
-        "compare the union of detected polygons. Instance scores use one-to-one matches "
-        f"at IoU ≥ {IOU_THRESHOLD:g}. Both axes share an average-linkage clustering "
-        "based on instance F1. Methods without detections follow the clustered methods. "
-        "A dash indicates an undefined score."
-    ),
-    "section_name": "${meta.id}",
-    "plot_type": "html",
-    "data": report_tabs(prefix, methods, rows),
-}
-Path(f"{prefix}.segmentation_agreement_mqc.json").write_text(
-    json.dumps(payload), encoding="utf-8"
-)
+write_heatmaps(prefix, "${meta.id}", methods, rows)
 
-packages = ("matplotlib", "numpy", "scipy", "shapely", "spatialdata")
+packages = ("numpy", "scipy", "shapely", "spatialdata")
 versions = {package: version(package) for package in packages}
 Path("versions.yml").write_text(json.dumps({"${task.process}": versions}) + chr(10))

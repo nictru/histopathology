@@ -42,8 +42,9 @@ The report includes these views for each slide.
 - **Cell type segmentation** shows the same crop with instances colored by predicted class when the model returns cell-type labels.
 - **Cell-type composition and density** shows a sortable metrics table and stacked bars of class proportions for each slide and model.
 - **Cell-type neighborhood enrichment** shows one heatmap per slide and model when neighborhood analysis returns defined scores.
+- **Tissue domains** shows a semi-transparent overlay of tile clusters on the original slide for each selected tile encoder.
 - **CytoFormer previews** appear in **Cell type segmentation** when `--cytoformer_organ` is set. Each preview identifies the source segmenter and organ head.
-- **Segmentation agreement** appears when two or more segmentation methods run. Switch metric tabs to compare methods on a fixed 0–1 scale. Each heatmap uses the same hierarchical order, based on instance F1. The dendrogram groups methods with detections, and methods without detections appear after them.
+- **Segmentation agreement** appears when two or more segmentation methods run. Switch metric tabs and hover over the interactive heatmaps to compare scores on a fixed 0–1 scale. Each heatmap uses the same hierarchical order based on instance F1. Methods without detections appear last.
 
 The report embeds thumbnails and detail crops. Use the corresponding Zarr outputs for full-resolution images, masks, geometries, and tile scores.
 
@@ -71,11 +72,17 @@ Find per-slide scores in `segmentation/<sample>.segmentation_agreement.csv`. The
 - **Instance F1, precision, and recall** count one-to-one matches with polygon IoU of at least 0.5. Matching maximizes the number of eligible pairs first and then their summed IoU. Rows are the reference methods and columns are the comparison methods.
 - **Mean matched IoU** averages the IoUs of the accepted pairs.
 
-Undefined scores appear as dashes in the heatmaps and empty fields in the CSV.
+Undefined scores appear as blank cells in the heatmaps and empty fields in the CSV.
 
 ### Slide embeddings
 
 Find one AnnData file per slide, tile encoder, and aggregation method in `slide_embeddings/<sample>.<tile_encoder>.<method>.slide_embedding.h5ad`. `X` contains one row for the slide. `uns['slide_embedding']` records the sample ID, tile encoder, method, and number of input tiles. `uns['tile_spec']` records the grid when tiles are available. A slide with no eligible tiles has zero rows and a tile count of zero.
+
+### Tissue domain maps
+
+Find one SpatialData store per slide and tile encoder at `tissue_domains/<sample>.<tile_encoder>.tissue_domains.zarr`. Each tile polygon keeps its original `tile_id` and has a `domain` label. The `tissue_domains` metadata records the clustering resolution and the number of tiles and domains.
+
+The pipeline smooths tile embeddings over neighboring grid positions in the same tissue piece and clusters the smoothed features with LazySlide. Domain labels and colors are assigned independently for each slide and encoder. Slides without eligible tiles produce an empty store and a note in MultiQC.
 
 ### Pipeline information
 

@@ -115,12 +115,20 @@ nextflow_process {
             assert rows['cellpose/cellpose'].foreground_iou == ''
             assert rows['cellpose/cellpose'].instance_f1 == ''
 
-            def preview = path(process.out.multiqc_files[0]).json
-            assert preview.parent_id == 'histopathology_segmentation_agreement'
-            assert preview.plot_type == 'html'
-            assert preview.data.count('data-bs-toggle="tab"') == metrics.size()
-            assert preview.data.count('data:image/png;base64,') == metrics.size()
-            assert preview.data.count('aria-selected="true"') == 1
+            def heatmaps = process.out.multiqc_files[0].collect { path(it).json }
+            assert heatmaps.size() == metrics.size()
+            assert heatmaps.every { it.parent_id == 'histopathology_segmentation_agreement' && it.plot_type == 'heatmap' }
+            def axes = heatmaps[0].xcats
+            assert axes.last() == 'cellpose'
+            assert heatmaps.every { it.xcats == axes && it.ycats == axes }
+            assert heatmaps.every { it.pconfig.min == 0 && it.pconfig.max == 1 }
+            def precision = heatmaps.find { it.pconfig.zlab == 'Instance precision' }.data
+            assert precision[axes.indexOf('instanseg')][axes.indexOf('nulite')].toDouble() == 1.0
+            assert precision[axes.indexOf('instanseg')][axes.indexOf('cellpose')] == null
+            assert precision[axes.indexOf('cellpose')][axes.indexOf('instanseg')].toDouble() == 0.0
+            def selector = heatmaps.find { it.description }.description
+            assert selector.count('data-bs-toggle="tab"') == metrics.size()
+            assert selector.count('aria-selected="true"') == 1
             assert snapshot(rows.collectEntries { pair, fields -> [(pair): fields.instance_f1] }).match()
         }
     }

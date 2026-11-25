@@ -1,0 +1,9 @@
+FROM public.cr.seqera.io/wave/pixi:0.61.0-noble
+WORKDIR /opt/spatialdomain
+COPY environment.yml pixi.lock ./
+RUN pixi init --import environment.yml \
+    && pixi project platform add linux-64 linux-aarch64 \
+    && pixi install --locked \
+    && pixi clean cache --yes
+ENV PATH="/opt/spatialdomain/.pixi/envs/default/bin:${PATH}"
+WORKDIR /

@@ -1,0 +1,25 @@
+{
+    "Emit separate domain maps and MultiQC plots for each encoder": {
+        "content": [
+            [
+                [
+                    "sample",
+                    "sample.resnet50.tissue_domains.zarr"
+                ],
+                [
+                    "sample",
+                    "sample.uni.tissue_domains.zarr"
+                ]
+            ],
+            [
+                "sample.resnet50.tissue_domains_mqc.json",
+                "sample.uni.tissue_domains_mqc.json"
+            ]
+        ],
+        "timestamp": "2026-11-25T09:22:11.47442",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

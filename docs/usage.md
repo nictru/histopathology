@@ -125,6 +125,17 @@ Learned methods select their paired tile encoder and non-overlapping grid automa
 
 When you select a paired tile encoder explicitly as well, the pipeline extracts its features once at the learned method's grid settings. Request access to any gated tile or slide models and set the `HF_TOKEN` Nextflow secret. Slide aggregation runs on CPU.
 
+## Tissue domain maps
+
+Set `--tissue_domain_resolution` to enable tissue domain maps. For example, `--embedding_model resnet50 --tissue_domain_resolution 0.3` clusters the ResNet50 tile embeddings for each slide. The pipeline maps every selected tile encoder, including encoders selected by learned slide aggregation methods. Higher Leiden resolutions generally produce finer partitions.
+
+For Docker, build the module image from its locked environment before launching the pipeline.
+
+```bash
+docker build -t localhost:5000/histopathology-spatialdomain:0.13.0 \
+    -f modules/local/lazyslide/spatialdomain/Dockerfile.pixi modules/local/lazyslide/spatialdomain
+```
+
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:

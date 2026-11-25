@@ -121,6 +121,11 @@
                     "default": "none",
                     "pattern": "^(none|(mean|median|max|chief|madeleine|moozy|prism|titan)(, *(mean|median|max|chief|madeleine|moozy|prism|titan))*)$",
                     "description": "Comma-separated slide embedding methods. Pooling uses the selected tile embeddings. Learned methods automatically select their paired tile encoders."
+                },
+                "tissue_domain_resolution": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "description": "Enable tissue domain maps for each slide and tile encoder at this Leiden clustering resolution."
                 }
             }
         },

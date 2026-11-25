@@ -37,10 +37,10 @@ output:
           description: Foreground and instance agreement scores for all ordered pairs of methods.
           pattern: "*.segmentation_agreement.csv"
   multiqc_files:
-    - "${prefix}.segmentation_agreement_mqc.json":
+    - "${prefix}.segmentation_agreement.*_mqc.json":
         type: file
-        description: Tabbed heatmaps of pairwise agreement metrics.
-        pattern: "*_mqc.json"
+        description: Native MultiQC heatmaps of pairwise agreement metrics.
+        pattern: "*.segmentation_agreement.*_mqc.json"
   versions:
     - versions.yml:
         type: file

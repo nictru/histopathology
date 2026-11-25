@@ -20,7 +20,7 @@ process SPATIALDATA_SEGMENTATIONAGREEMENT {
 
     output:
     tuple val(meta), path("${prefix}.segmentation_agreement.csv"), emit: agreement
-    path "${prefix}.segmentation_agreement_mqc.json", emit: multiqc_files
+    path "${prefix}.segmentation_agreement.*_mqc.json", arity: '6', emit: multiqc_files
     path "versions.yml", emit: versions, topic: versions
 
     when:
@@ -36,7 +36,10 @@ process SPATIALDATA_SEGMENTATIONAGREEMENT {
     stub:
     prefix = task.ext.prefix ?: "${meta.id}"
     """
-    touch '${prefix}.segmentation_agreement.csv' '${prefix}.segmentation_agreement_mqc.json'
+    touch '${prefix}.segmentation_agreement.csv'
+    for metric in foreground_dice foreground_iou instance_f1 mean_matched_iou precision recall; do
+        echo '{}' > "${prefix}.segmentation_agreement.\${metric}_mqc.json"
+    done
     echo '{}' > versions.yml
     """
 }

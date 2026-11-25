@@ -14,6 +14,7 @@ include { SQUIDPY_NEIGHBORHOODENRICHMENT } from '../modules/local/squidpy/neighb
 include { STAIN_NORMALIZATION    } from '../subworkflows/local/stain_normalization/main'
 include { TILE_EMBEDDINGS         } from '../subworkflows/local/tile_embeddings/main'
 include { LAZYSLIDE_FEATUREAGGREGATION } from '../modules/local/lazyslide/featureaggregation/main'
+include { LAZYSLIDE_SPATIALDOMAIN } from '../modules/local/lazyslide/spatialdomain/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -46,6 +47,7 @@ workflow HISTOPATHOLOGY {
     embedding_model
     embedding_batch_size
     slide_embedding_method
+    tissue_domain_resolution
     multiqc_config
     multiqc_logo
     multiqc_methods_description
@@ -167,8 +169,12 @@ workflow HISTOPATHOLOGY {
     if (slide_methods && !embedding_models) {
         error('Slide pooling requires --embedding_model or a learned --slide_embedding_method.')
     }
+    if (tissue_domain_resolution != null && !embedding_models) {
+        error('Tissue domain maps require --embedding_model or a learned --slide_embedding_method.')
+    }
     def ch_embeddings = channel.empty()
     def ch_slide_embeddings = channel.empty()
+    def ch_tissue_domains = channel.empty()
     if (embedding_models) {
         def unsupported_models = embedding_models.findAll { model -> !(model ==~ /[a-z0-9][a-z0-9_.-]*/) || model == 'none' }
         if (unsupported_models) {
@@ -187,6 +193,14 @@ workflow HISTOPATHOLOGY {
             required_grids,
         )
         ch_embeddings = TILE_EMBEDDINGS.out.embeddings.map { meta, store, _model -> [meta, store] }
+        if (tissue_domain_resolution != null) {
+            LAZYSLIDE_SPATIALDOMAIN(
+                TILE_EMBEDDINGS.out.embeddings.combine(WSIDATA_INGEST.out.slide, by: 0),
+                tissue_domain_resolution,
+            )
+            ch_tissue_domains = LAZYSLIDE_SPATIALDOMAIN.out.domains
+            ch_multiqc_files = ch_multiqc_files.mix(LAZYSLIDE_SPATIALDOMAIN.out.multiqc_files)
+        }
         if (slide_methods) {
             def ch_slide_inputs = TILE_EMBEDDINGS.out.embeddings
                 .combine(ch_analysis_slides, by: 0)
@@ -269,6 +283,7 @@ workflow HISTOPATHOLOGY {
     segmentation_agreement = ch_segmentation_agreement                            // channel: [ val(meta), path(agreement_csv) ]
     embeddings        = ch_embeddings                                             // channel: [ val(meta), path(embedding_store) ]
     slide_embeddings  = ch_slide_embeddings                                       // channel: [ val(meta), path(slide_embedding) ]
+    tissue_domains    = ch_tissue_domains                                         // channel: [ val(meta), path(domain_store) ]
     multiqc_report    = MULTIQC.out.report.map { _meta, report -> [report] }.toList() // channel: /path/to/multiqc_report.html
     versions          = ch_versions                                              // channel: [ path(versions.yml) ]
 }
