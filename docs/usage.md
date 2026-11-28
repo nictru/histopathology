@@ -12,12 +12,12 @@
 
 Pass a CSV file to `--input` with one row per slide. Give each slide a unique sample ID.
 
-| Column | Description |
-| ------ | ----------- |
-| `sample` | Sample ID used to name the output files. |
-| `slide` | Path to a TIFF, Aperio SVS, JPEG, or Zeiss CZI slide. |
-| `scene` | Zero-based scene index for a CZI. Leave it blank for TIFF, SVS, JPEG, or a single-scene CZI. |
-| `mpp` | Pixel size in microns. Supply it for JPEG. For TIFF, SVS, and CZI, leave it blank to use the source calibration. |
+| Column   | Description                                                                                                      |
+| -------- | ---------------------------------------------------------------------------------------------------------------- |
+| `sample` | Sample ID used to name the output files.                                                                         |
+| `slide`  | Path to a TIFF, Aperio SVS, JPEG, or Zeiss CZI slide.                                                            |
+| `scene`  | Zero-based scene index for a CZI. Leave it blank for TIFF, SVS, JPEG, or a single-scene CZI.                     |
+| `mpp`    | Pixel size in microns. Supply it for JPEG. For TIFF, SVS, and CZI, leave it blank to use the source calibration. |
 
 See the [example samplesheet](../assets/samplesheet.csv).
 
@@ -54,13 +54,13 @@ GrandQC defaults to `7x`. Use `--grandqc_variant` to select `5x`, `7x`, or `10x`
 
 Set `--segmentation_model instanseg` to segment nuclei. Segmentation uses the normalized slides when you supply a stain reference and the ingested slides when you omit it. Use a comma-separated list such as `--segmentation_model instanseg,nulite` to run several methods on each slide. The default is `none`.
 
-| Model | Instance polygons | Tile size |
-| --- | --- | --- |
-| `instanseg` | Nuclei | 512 × 512 px |
-| `cellpose` | Objects detected by the Cellpose checkpoint | 256 × 256 px |
-| `classpose` | Instances with cell-type labels | 256 × 256 px |
-| `nulite` | Nuclei with cell-type labels | 256 × 256 px |
-| `histoplus` | Nuclei with cell-type labels | 224 × 224 px |
+| Model       | Instance polygons                           | Tile size    |
+| ----------- | ------------------------------------------- | ------------ |
+| `instanseg` | Nuclei                                      | 512 × 512 px |
+| `cellpose`  | Objects detected by the Cellpose checkpoint | 256 × 256 px |
+| `classpose` | Instances with cell-type labels             | 256 × 256 px |
+| `nulite`    | Nuclei with cell-type labels                | 256 × 256 px |
+| `histoplus` | Nuclei with cell-type labels                | 224 × 224 px |
 
 Set `--segmentation_mpp` to choose the tile resolution for all selected segmentation models. The default is 0.5 µm/px with 12.5% overlap. Use a resolution compatible with each selected checkpoint and supply calibrated slides scanned at that resolution or finer. Selected models with the same tile size share a grid. The pipeline reuses the regular grid if its size, MPP, and overlap match the model settings. For example, `--tile_px 512 --tile_mpp 0.5 --tile_overlap 0.125` shares the grid between InstanSeg and tile QC at the default segmentation resolution.
 
@@ -119,13 +119,13 @@ Set `--slide_embedding_method` to one or more comma-separated methods. For examp
 
 Learned methods select their paired tile encoder and non-overlapping grid automatically. For example, `--slide_embedding_method mean,titan` produces both a mean-pooled and a TITAN embedding from the same CONCH v1.5 tile features. Pooling runs on all tile encoders selected by either flag.
 
-| Learned method | Paired tile encoder | Tile size | Resolution |
-| --- | --- | --- | --- |
-| `chief` | `chief` | 256 px | 1.0 µm/px |
-| `madeleine` | `conch-madeleine` | 256 px | 1.0 µm/px |
-| `moozy` | `lunit-dino-s8-moozy` | 224 px | 0.5 µm/px |
-| `prism` | `virchow` | 224 px | 0.5 µm/px |
-| `titan` | `titan` (CONCH v1.5) | 512 px | 0.5 µm/px |
+| Learned method | Paired tile encoder   | Tile size | Resolution |
+| -------------- | --------------------- | --------- | ---------- |
+| `chief`        | `chief`               | 256 px    | 1.0 µm/px  |
+| `madeleine`    | `conch-madeleine`     | 256 px    | 1.0 µm/px  |
+| `moozy`        | `lunit-dino-s8-moozy` | 224 px    | 0.5 µm/px  |
+| `prism`        | `virchow`             | 224 px    | 0.5 µm/px  |
+| `titan`        | `titan` (CONCH v1.5)  | 512 px    | 0.5 µm/px  |
 
 When you select a paired tile encoder explicitly as well, the pipeline extracts its features once at the learned method's grid settings. Request access to any gated tile or slide models and set the `HF_TOKEN` Nextflow secret. Slide aggregation runs on CPU.
 
