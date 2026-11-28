@@ -92,3 +92,21 @@ jobs:
         with:
           name: pr-comment
           path: pr-comment/
+
+      - name: Regenerate logos on the lint runner
+        if: ${{ failure() }}
+        run: |
+          nf-core pipelines create-logo histopathology --dir assets --force
+          nf-core pipelines create-logo histopathology --dir docs/images --width 600 --theme light --force
+          nf-core pipelines create-logo histopathology --dir docs/images --width 600 --theme dark --force
+
+      - name: Upload regenerated logos
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: runner-logos
+          if-no-files-found: error
+          path: |
+            assets/nf-core-histopathology_logo_light.png
+            docs/images/nf-core-histopathology_logo_light.png
+            docs/images/nf-core-histopathology_logo_dark.png
