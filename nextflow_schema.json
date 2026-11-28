@@ -82,7 +82,24 @@
                 },
                 "cytoformer_organ": {
                     "type": "string",
-                    "enum": ["bone", "bone_marrow", "brain", "breast", "cervix", "colon", "heart", "kidney", "liver", "lung", "lymph_node", "ovary", "pancreas", "prostate", "skin", "tonsil"],
+                    "enum": [
+                        "bone",
+                        "bone_marrow",
+                        "brain",
+                        "breast",
+                        "cervix",
+                        "colon",
+                        "heart",
+                        "kidney",
+                        "liver",
+                        "lung",
+                        "lymph_node",
+                        "ovary",
+                        "pancreas",
+                        "prostate",
+                        "skin",
+                        "tonsil"
+                    ],
                     "description": "Enable CytoFormer cell typing with the selected organ head. Requires a segmentation model and Hugging Face model access."
                 },
                 "cell_neighborhood_radius_um": {

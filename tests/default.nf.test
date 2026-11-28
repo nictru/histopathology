@@ -18,7 +18,7 @@ nextflow_pipeline {
             // stable_content: All files in ${params.outdir}/ with stable content
             def stable_content = getAllFilesFromDir(params.outdir, ignoreFile: 'tests/.nftignore')
             assert workflow.success
-            def report = path("$outputDir/multiqc/multiqc_report.html").text
+            def report = path("$outputDir/08_multiqc/multiqc_report.html").text
             def report_sections = ['tissue', 'slide_qc', 'tile_qc', 'normalization', 'segmentation', 'cell_type_composition']
             assertAll(
                 { assert report_sections.every { section -> report.contains("id=\"histopathology_${section}\"") } },
