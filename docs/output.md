@@ -2,7 +2,7 @@
 
 ## Output directories
 
-Paths are relative to `--outdir`. Each directory appears when its stage produces a file. If you reuse an output directory, files from earlier runs remain in their original locations.
+Paths are relative to `--outdir`. Set `--save_intermediates` to publish the stores in `01_preprocessing/`, `02_quality_control/`, and `05_embeddings/tiles/`. Nextflow still writes these stores to its work directory for use during the run. If you reuse an output directory, files from earlier runs remain in their original locations.
 
 | Directory                             | Contents                                                                 |
 | ------------------------------------- | ------------------------------------------------------------------------ |
@@ -38,7 +38,7 @@ Paths are relative to `--outdir`. Each directory appears when its stage produces
 
 The report includes these views for each slide.
 
-- **Tissue masks** show a semi-transparent overlay on the original slide for each selected tissue method. Find the masks at `01_preprocessing/tissue_masks/<sample>.<method>.tissue.zarr`. With the default Otsu-only run, the filename is `<sample>.tissue.zarr`.
+- **Tissue masks** show a semi-transparent overlay on the original slide for each selected tissue method. With `--save_intermediates`, find the masks at `01_preprocessing/tissue_masks/<sample>.<method>.tissue.zarr`. When Otsu is the only method, the filename is `<sample>.tissue.zarr`.
 - **Slide QC** overlays GrandQC artifact classes on the original slide.
 - **Tile QC** displays spatial score maps for the image metrics, FocusLiteNN, and PathProfilerQC. Each map uses its observed score range and averages scores where tiles overlap.
 - **Stain normalization** shows matching original and normalized slide thumbnails when normalization runs.
@@ -53,7 +53,7 @@ The report includes these views for each slide.
 - **CytoFormer previews** appear in **Cell type segmentation** when `--cytoformer_organ` is set. Each preview identifies the source segmenter and organ head.
 - **Segmentation agreement** appears when two or more segmentation methods run. Switch metric tabs and hover over the interactive heatmaps to compare scores on a fixed 0–1 scale. Each heatmap uses the same hierarchical order based on instance F1. Methods without detections appear last.
 
-The report embeds thumbnails and detail crops. Use the corresponding Zarr outputs for full-resolution images, masks, geometries, and tile scores.
+The report embeds thumbnails and detail crops. Set `--save_intermediates` to access full-resolution slide images, tissue masks, and QC scores in `--outdir`.
 
 ### CytoFormer cell types
 
