@@ -1,0 +1,18 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/environment-schema.json
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - conda-forge::pip=26.0.1
+  - conda-forge::python=3.13.13
+  - conda-forge::pytorch-cpu=2.14.1
+  - conda-forge::torchvision=0.29.1
+  - pip:
+      - dask==2026.11.0
+      - lazyslide==0.13.0
+      - matplotlib==3.11.2
+      - rasterio==1.5.0
+      - spatialdata==0.9.0
+      - tifffile==2026.5.15
+      - wsidata==0.12.0

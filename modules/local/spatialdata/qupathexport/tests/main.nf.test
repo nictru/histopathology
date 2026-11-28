@@ -1,0 +1,92 @@
+nextflow_process {
+    name "Test SPATIALDATA_QUPATHEXPORT"
+    script "../main.nf"
+    process "SPATIALDATA_QUPATHEXPORT"
+
+    tag "modules"
+    tag "modules_local"
+    tag "spatialdata/qupathexport"
+    tag "wsidata/ingest"
+    tag "lazyslide/findtissues"
+    tag "lazyslide/tiletissues"
+
+    test("Export calibrated RGB slides and tissue annotations") {
+        setup {
+            run("WSIDATA_INGEST") {
+                script "../../../wsidata/ingest/main.nf"
+                process {
+                    """
+                    def input_slides = ['tissue', 'blank'].collect { sample ->
+                        def slide = java.nio.file.Files.createTempFile(sample, '.tif')
+                        def image = new java.awt.image.BufferedImage(640, 515, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                        def graphics = image.createGraphics()
+                        graphics.setColor(java.awt.Color.WHITE)
+                        graphics.fillRect(0, 0, image.width, image.height)
+                        if (sample == 'tissue') {
+                            graphics.setColor(new java.awt.Color(190, 75, 140))
+                            graphics.fillRect(20, 20, 500, 425)
+                            graphics.setColor(java.awt.Color.WHITE)
+                            graphics.fillRect(180, 150, 180, 140)
+                        }
+                        graphics.dispose()
+                        assert javax.imageio.ImageIO.write(image, 'tiff', slide.toFile())
+                        [[id: sample], slide, [], 0.5]
+                    }
+                    input[0] = channel.fromList(input_slides)
+                    """
+                }
+            }
+            run("LAZYSLIDE_FINDTISSUES") {
+                script "../../../lazyslide/findtissues/main.nf"
+                process {
+                    """
+                    input[0] = WSIDATA_INGEST.out.slide.map { meta, slide -> [meta, slide, 'otsu'] }
+                    """
+                }
+            }
+            run("LAZYSLIDE_TILETISSUES") {
+                script "../../../lazyslide/tiletissues/main.nf"
+                process {
+                    """
+                    input[0] = WSIDATA_INGEST.out.slide.join(LAZYSLIDE_FINDTISSUES.out.mask.map { meta, mask, _method -> [meta, mask] })
+                    input[1] = 128
+                    input[2] = 0.5
+                    input[3] = 0
+                    input[4] = 0.3
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = WSIDATA_INGEST.out.slide
+                    .join(LAZYSLIDE_FINDTISSUES.out.mask.map { meta, mask, _method -> [meta, mask] })
+                    .join(LAZYSLIDE_TILETISSUES.out.tiles.map { meta, tiles, _pixels -> [meta, tiles] })
+                    .map { meta, slide, mask, tiles -> [meta, ['original', 'tissue', 'tiles'], [slide, mask, tiles]] }
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def layers = process.out.slide.sort { it[0].id }.collectEntries { meta, directory ->
+                def result = path(directory)
+                assert result.resolve('original.ome.tif').toFile().length() > 0
+                def manifest = path(result.resolve('layers.json').toString()).json
+                if (meta.id == 'tissue') {
+                    def annotation = path(result.resolve('000-000000000.geojson').toString()).json.features.first()
+                    assert annotation.properties.objectType == 'annotation'
+                    assert annotation.geometry.type == 'Polygon'
+                    assert annotation.geometry.coordinates.size() == 2
+                    assert manifest[0].objects == 1
+                } else {
+                    assert manifest.every { it.objects == 0 }
+                }
+                [meta.id, manifest*.layer]
+            }
+            assert snapshot(layers).match()
+        }
+    }
+}

@@ -60,6 +60,7 @@ workflow NFCORE_HISTOPATHOLOGY {
         params.embedding_batch_size,
         params.slide_embedding_method,
         params.tissue_domain_resolution,
+        params.export_qupath,
         params.multiqc_config,
         params.multiqc_logo,
         params.multiqc_methods_description,
@@ -82,6 +83,7 @@ workflow NFCORE_HISTOPATHOLOGY {
     slide_embeddings  = HISTOPATHOLOGY.out.slide_embeddings  // channel: [ val(meta), path(slide_embedding) ]
     tissue_domains    = HISTOPATHOLOGY.out.tissue_domains    // channel: [ val(meta), path(domain_store) ]
     tissue_regions    = HISTOPATHOLOGY.out.tissue_regions    // channel: [ val(meta), path(region_store) ]
+    qupath_project    = HISTOPATHOLOGY.out.qupath_project  // channel: path(project_directory)
     multiqc_report    = HISTOPATHOLOGY.out.multiqc_report    // channel: /path/to/multiqc_report.html
 }
 /*
