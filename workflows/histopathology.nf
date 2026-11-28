@@ -18,6 +18,8 @@ include { TILE_EMBEDDINGS         } from '../subworkflows/local/tile_embeddings/
 include { LAZYSLIDE_FEATUREAGGREGATION } from '../modules/local/lazyslide/featureaggregation/main'
 include { LAZYSLIDE_SPATIALDOMAIN } from '../modules/local/lazyslide/spatialdomain/main'
 include { LAZYSLIDE_TISSUEREGIONS } from '../modules/local/lazyslide/tissueregions/main'
+include { SPATIALDATA_QUPATHEXPORT } from '../modules/local/spatialdata/qupathexport/main'
+include { QUPATH_PROJECT         } from '../modules/local/qupath/project/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -55,6 +57,7 @@ workflow HISTOPATHOLOGY {
     embedding_batch_size
     slide_embedding_method
     tissue_domain_resolution
+    export_qupath
     multiqc_config
     multiqc_logo
     multiqc_methods_description
@@ -276,6 +279,40 @@ workflow HISTOPATHOLOGY {
         ch_multiqc_files = ch_multiqc_files.mix(SPATIALDATA_CELLFEATURES.out.multiqc_files)
     }
 
+    def ch_qupath_project = channel.empty()
+    if (export_qupath) {
+        def ch_export_stores = WSIDATA_INGEST.out.slide
+            .map { meta, store -> [meta, 'original', store] }
+            .mix(
+                ch_normalized_slides.map { meta, store -> [meta, 'normalized', store] },
+                LAZYSLIDE_FINDTISSUES.out.mask.map { meta, store, _method -> [meta, 'tissue', store] },
+                ch_tiles.map { meta, store -> [meta, 'tiles', store] },
+                QC.out.tile_qc.map { meta, store -> [meta, 'tile_qc', store] },
+                QC.out.slide_qc.map { meta, store -> [meta, 'slide_qc', store] },
+                ch_cells.map { meta, store -> [meta, 'cells', store] },
+                ch_cell_types.map { meta, store -> [meta, 'cell_types', store] },
+                ch_cell_niches.map { meta, store -> [meta, 'cell_niches', store] },
+                ch_cell_features.map { meta, store -> [meta, 'cell_features', store] },
+                ch_tissue_domains.map { meta, store -> [meta, 'domains', store] },
+                ch_tissue_regions.map { meta, store -> [meta, 'regions', store] },
+            )
+            .groupTuple()
+            .map { meta, kinds, stores ->
+                def order = kinds.indices.toList().sort { i -> "${kinds[i]}:${stores[i].name}" }
+                [meta, order.collect { i -> kinds[i] }, order.collect { i -> stores[i] }]
+            }
+        SPATIALDATA_QUPATHEXPORT(ch_export_stores)
+        def ch_qupath_slides = SPATIALDATA_QUPATHEXPORT.out.slide
+            .map { _meta, slide -> slide }
+            .toSortedList { a, b -> a.name <=> b.name }
+            .filter { slides -> slides.size() > 0 }
+        def archive = workflow.stubRun
+            ? file("${projectDir}/nextflow.config")
+            : file('https://github.com/qupath/qupath/releases/download/v0.7.0/QuPath-v0.7.0-Linux.tar.xz')
+        QUPATH_PROJECT(ch_qupath_slides, archive)
+        ch_qupath_project = QUPATH_PROJECT.out.project
+    }
+
     def ch_versions = channel.empty()
 
     //
@@ -351,6 +388,7 @@ workflow HISTOPATHOLOGY {
     slide_embeddings  = ch_slide_embeddings                                       // channel: [ val(meta), path(slide_embedding) ]
     tissue_domains    = ch_tissue_domains                                         // channel: [ val(meta), path(domain_store) ]
     tissue_regions    = ch_tissue_regions                                         // channel: [ val(meta), path(region_store) ]
+    qupath_project    = ch_qupath_project                                         // channel: path(project_directory)
     multiqc_report    = MULTIQC.out.report.map { _meta, report -> [report] }.toList() // channel: /path/to/multiqc_report.html
     versions          = ch_versions                                              // channel: [ path(versions.yml) ]
 }

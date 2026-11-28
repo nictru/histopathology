@@ -23,6 +23,8 @@ See the [example samplesheet](../assets/samplesheet.csv).
 
 The pipeline uses WSIData to read CZI with pylibCZI, TIFF and SVS with TiffSlide, and JPEG with Bio-Formats. Set `--save_intermediates` to publish a self-contained `<sample>.zarr` to `<OUTDIR>/01_preprocessing/slides/`. The store contains the RGB image under the `wsi` key. Its attributes record the pixel calibration and the original CZI scene origin when applicable. The pylibCZI reader fills gaps in a CZI scene with black pixels.
 
+Set `--export_qupath` to generate a native QuPath project under `<OUTDIR>/09_qupath/`. Open `project.qpproj` in QuPath 0.7 to review the slides with the spatial results already loaded. This option works independently of `--save_intermediates` and adds an OME-TIFF copy of each exported image. See the [QuPath output description](output.md#qupath-project).
+
 When normalization and `--save_intermediates` are enabled, the pipeline publishes `<sample>.normalized.zarr` to `<OUTDIR>/01_preprocessing/normalized_slides/`. Reopen either slide store with WSIData. Ingested images, tissue masks, and normalized images use 2048 × 2048 pixel Zarr v3 shards with 256 × 256 pixel chunks. Use a fresh `--outdir` when replacing older, unsharded outputs.
 
 ```python

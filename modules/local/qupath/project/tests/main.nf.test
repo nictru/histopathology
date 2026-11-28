@@ -1,0 +1,48 @@
+nextflow_process {
+    name "Test QUPATH_PROJECT"
+    script "../main.nf"
+    process "QUPATH_PROJECT"
+
+    tag "modules"
+    tag "modules_local"
+    tag "qupath/project"
+
+    test("Save a project with preloaded detections and annotations") {
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            process {
+                """
+                def slide = java.nio.file.Files.createTempDirectory('export-slide')
+                def image = new java.awt.image.BufferedImage(32, 24, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                assert javax.imageio.ImageIO.write(image, 'tiff', slide.resolve('original.ome.tif').toFile())
+                slide.resolve('layers.json').toFile().text = '[{"layer":"Segmentation","objects":1},{"layer":"Tissue mask","objects":1}]'
+                slide.resolve('objects.geojson').toFile().text = '''
+                {"type":"FeatureCollection","features":[
+                    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[3,3],[7,3],[7,7],[3,7],[3,3]]]},
+                     "properties":{"objectType":"detection","classification":{"names":["Segmentation","Tumor"],"color":[255,0,0]},
+                                   "measurements":{"Area":16},"metadata":{"Instance ID":"123"}}},
+                    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[0,0],[20,0],[20,20],[0,20],[0,0]],[[10,10],[10,15],[15,15],[15,10],[10,10]]]},
+                     "properties":{"objectType":"annotation","classification":{"names":["Tissue mask","otsu"],"color":null}}}
+                ]}
+                '''
+                input[0] = channel.of([slide])
+                input[1] = file('https://github.com/qupath/qupath/releases/download/v0.7.0/QuPath-v0.7.0-Linux.tar.xz')
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def project = path(process.out.project.get(0))
+            def entries = path(project.resolve('project.qpproj').toString()).json.images
+            assert entries.size() == 1
+            def entry = entries.first()
+            assert project.resolve("images/${entry.imageName}.original.ome.tif").toFile().length() > 0
+            assert project.resolve("data/${entry.entryID}/data.qpdata").toFile().length() > 0
+            def counts = path(project.resolve("layers/${entry.imageName}.json").toString()).json
+            assert snapshot(counts).match()
+        }
+    }
+}

@@ -1,0 +1,71 @@
+name: spatialdata_qupathexport
+description: Convert a slide and its SpatialData layers to image and object files for QuPath.
+keywords:
+  - histology
+  - spatialdata
+  - qupath
+tools:
+  - lazyslide:
+      description: Whole-slide image analysis for digital pathology.
+      homepage: https://github.com/rendeirolab/LazySlide
+      documentation: https://lazyslide.readthedocs.io/
+      licence: ["MIT"]
+      identifier: biotools:lazyslide
+input:
+  - - meta:
+        type: map
+        description: Slide metadata containing the sample ID.
+    - kinds:
+        type: list
+        description: Source layer categories in the order of their stores.
+    - stores:
+        type: directory
+        description: Slide images and spatial result layers for a single sample.
+        pattern: "*.zarr"
+output:
+  slide:
+    - - meta:
+          type: map
+          description: Slide metadata containing the sample ID.
+      - "${prefix}":
+          type: directory
+          description: Pyramidal OME-TIFF images and QuPath GeoJSON objects for the slide.
+          pattern: "${prefix}"
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+topics:
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/arm64:
+      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:cd8a22ff9c0c9af5
+      build_id: bd-cd8a22ff9c0c9af5_1
+      scan_id: sc-387a905034776455_1
+    linux/amd64:
+      name: community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:b4bbaeffd6e10901
+      build_id: bd-b4bbaeffd6e10901_1
+      scan_id: sc-27c01871ded16ed2_1
+  singularity:
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:a215a66654b29d3b
+      build_id: bd-a215a66654b29d3b_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/a6/a6c1d52d60aacb9aecded7b07ee39ce03459350c634f41fde0f4e234216fa247/data
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/pip_python_pytorch-cpu_torchvision_pruned:72d9632991dc685a
+      build_id: bd-72d9632991dc685a_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/f8/f8a9e062fd5d029b951e763e93d44239cb1f990def3f85d667da843ad06dbbc3/data
+  conda:
+    linux/amd64:
+      lock_file: modules/local/spatialdata/qupathexport/.conda-lock/linux_amd64-bd-b4bbaeffd6e10901_1.txt
+    linux/arm64:
+      lock_file: modules/local/spatialdata/qupathexport/.conda-lock/linux_arm64-bd-cd8a22ff9c0c9af5_1.txt

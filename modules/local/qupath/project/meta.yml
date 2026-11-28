@@ -1,0 +1,65 @@
+name: qupath_project
+description: Save a native QuPath project with slide images and preloaded objects.
+keywords:
+  - histology
+  - visualization
+  - qupath
+tools:
+  - qupath:
+      description: Software for digital pathology image analysis.
+      homepage: https://qupath.github.io/
+      documentation: https://qupath.readthedocs.io/
+      licence: ["GPL-3.0-or-later"]
+      identifier: biotools:qupath
+input:
+  - slides:
+      type: directory
+      description: Per-slide directories with OME-TIFF images and QuPath GeoJSON objects.
+  - archive:
+      type: file
+      description: Pinned QuPath Linux release archive used to run QuPath headlessly.
+      pattern: "*.tar.xz"
+output:
+  project:
+    - qupath:
+        type: directory
+        description: Native QuPath project with images and saved object hierarchies.
+        pattern: qupath
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+        pattern: versions.yml
+topics:
+  versions:
+    - versions.yml:
+        type: file
+        description: Software versions.
+authors:
+  - "@nictru"
+maintainers:
+  - "@nictru"
+containers:
+  docker:
+    linux/amd64:
+      name: community.wave.seqera.io/library/openjdk_xz:67cd529261f85418
+      build_id: bd-67cd529261f85418_1
+      scan_id: sc-70c6284d668813a6_1
+    linux/arm64:
+      name: community.wave.seqera.io/library/openjdk_xz:8e5ef81a5fd5a291
+      build_id: bd-8e5ef81a5fd5a291_1
+      scan_id: sc-a8b6258281e445f5_1
+  singularity:
+    linux/amd64:
+      name: oras://community.wave.seqera.io/library/openjdk_xz:59ca2f1fd02bfc7a
+      build_id: bd-59ca2f1fd02bfc7a_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/fe/fe0834ae193fceed7f2ebb8664f2c8124e8b43959e2d58c4029c697c6c1c6fa9/data
+    linux/arm64:
+      name: oras://community.wave.seqera.io/library/openjdk_xz:4a1f6f30e46fc188
+      build_id: bd-4a1f6f30e46fc188_1
+      https: https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/71/71fbea6781753721b09cef48ad0103a4deb29e20062f800cd0dd11e53a6e2f0e/data
+  conda:
+    linux/amd64:
+      lock_file: modules/local/qupath/project/.conda-lock/linux_amd64-bd-67cd529261f85418_1.txt
+    linux/arm64:
+      lock_file: modules/local/qupath/project/.conda-lock/linux_arm64-bd-8e5ef81a5fd5a291_1.txt

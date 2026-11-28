@@ -1,0 +1,21 @@
+{
+    "Export calibrated RGB slides and tissue annotations": {
+        "content": [
+            {
+                "blank": [
+                    "Tissue mask otsu",
+                    "Tile grid and QC"
+                ],
+                "tissue": [
+                    "Tissue mask otsu",
+                    "Tile grid and QC"
+                ]
+            }
+        ],
+        "timestamp": "2026-11-28T14:59:25.166354",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

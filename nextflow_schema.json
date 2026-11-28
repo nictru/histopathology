@@ -35,6 +35,12 @@
                     "description": "Publish intermediate slide, tissue mask, tile, quality control, and tile embedding stores to the output directory.",
                     "fa_icon": "fas fa-save"
                 },
+                "export_qupath": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Export a native QuPath project with whole-slide images and preloaded analysis objects.",
+                    "fa_icon": "fas fa-microscope"
+                },
                 "email": {
                     "type": "string",
                     "description": "Email address for completion summary.",

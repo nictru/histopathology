@@ -1,0 +1,21 @@
+{
+    "Save a project with preloaded detections and annotations": {
+        "content": [
+            [
+                {
+                    "layer": "Segmentation",
+                    "objects": 1
+                },
+                {
+                    "layer": "Tissue mask",
+                    "objects": 1
+                }
+            ]
+        ],
+        "timestamp": "2026-11-28T14:55:58.757693",
+        "meta": {
+            "nf-test": "0.9.4",
+            "nextflow": "26.10.7"
+        }
+    }
+}

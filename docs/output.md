@@ -4,23 +4,30 @@
 
 Paths are relative to `--outdir`. Set `--save_intermediates` to publish the stores in `01_preprocessing/`, `02_quality_control/`, and `05_embeddings/tiles/`. Nextflow still writes these stores to its work directory for use during the run. If you reuse an output directory, files from earlier runs remain in their original locations.
 
-| Directory                             | Contents                                                                 |
-| ------------------------------------- | ------------------------------------------------------------------------ |
-| `01_preprocessing/slides/`            | Ingested whole-slide images                                              |
-| `01_preprocessing/tissue_masks/`      | Tissue masks for each selected method                                    |
-| `01_preprocessing/normalized_slides/` | Stain-normalized slides                                                  |
-| `01_preprocessing/tiles/`             | Tissue tile grids                                                        |
-| `02_quality_control/slides/`          | GrandQC artifact maps                                                    |
-| `02_quality_control/tiles/`           | Image metrics, FocusLiteNN, and PathProfilerQC scores                    |
-| `03_segmentation/`                    | Segmented nuclei or cells and agreement scores                           |
-| `04_cell_types/`                      | CytoFormer classifications, composition, density, enrichment, and niches |
-| `05_embeddings/tiles/`                | Tile embeddings for each encoder                                         |
-| `05_embeddings/slides/`               | Aggregated slide embeddings                                              |
-| `06_tissue_mapping/domains/`          | Tissue domain labels for each tile encoder                               |
-| `06_tissue_mapping/regions/`          | Connected regions from the selected domain map                           |
-| `07_cell_features/`                   | Cell or nucleus morphology and regional composition                      |
-| `08_multiqc/`                         | MultiQC report, data, and plots                                          |
-| `pipeline_info/`                      | Nextflow execution reports and run metadata                              |
+| Directory                             | Contents                                                                       |
+| ------------------------------------- | ------------------------------------------------------------------------------ |
+| `01_preprocessing/slides/`            | Ingested whole-slide images                                                    |
+| `01_preprocessing/tissue_masks/`      | Tissue masks for each selected method                                          |
+| `01_preprocessing/normalized_slides/` | Stain-normalized slides                                                        |
+| `01_preprocessing/tiles/`             | Tissue tile grids                                                              |
+| `02_quality_control/slides/`          | GrandQC artifact maps                                                          |
+| `02_quality_control/tiles/`           | Image metrics, FocusLiteNN, and PathProfilerQC scores                          |
+| `03_segmentation/`                    | Segmented nuclei or cells and agreement scores                                 |
+| `04_cell_types/`                      | CytoFormer classifications, composition, density, enrichment, and niches       |
+| `05_embeddings/tiles/`                | Tile embeddings for each encoder                                               |
+| `05_embeddings/slides/`               | Aggregated slide embeddings                                                    |
+| `06_tissue_mapping/domains/`          | Tissue domain labels for each tile encoder                                     |
+| `06_tissue_mapping/regions/`          | Connected regions from the selected domain map                                 |
+| `07_cell_features/`                   | Cell or nucleus morphology and regional composition                            |
+| `08_multiqc/`                         | MultiQC report, data, and plots                                                |
+| `09_qupath/`                          | QuPath project with slides and preloaded objects when `--export_qupath` is set |
+| `pipeline_info/`                      | Nextflow execution reports and run metadata                                    |
+
+### QuPath project
+
+With `--export_qupath`, open `09_qupath/project.qpproj` in QuPath 0.7. The project includes one entry per input slide and an additional entry when stain normalization runs. Both entries show the same spatial results. The `images/` directory contains calibrated pyramidal OME-TIFFs, and `data/` contains the saved QuPath objects. Keep the whole directory together when sharing or moving it. If QuPath prompts to update the image paths after a move, accept its suggested paths.
+
+Each slide includes the polygons from every selected segmentation model, tissue masks, GrandQC artifacts, tile QC, and tissue domains and regions when those stages produced results. The project groups detections by segmentation model. When CytoFormer runs, its predictions become the displayed classes, and the original classifications are stored in object metadata. Object measurements include available morphology, confidence, and QC scores. Niche and region assignments are available in object metadata. The `layers/` directory records object counts per slide and layer.
 
 ### MultiQC
 
