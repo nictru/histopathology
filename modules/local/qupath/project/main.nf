@@ -20,7 +20,7 @@ process QUPATH_PROJECT {
 
     output:
     path 'qupath', emit: project
-    path 'versions.yml', emit: versions, topic: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
