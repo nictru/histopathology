@@ -14,7 +14,7 @@ import pandas as pd
 from lazyslide.io import export_annotations
 from rasterio.features import shapes as raster_shapes
 from rasterio.transform import Affine
-from shapely import get_parts, union_all
+from shapely import get_parts, is_empty, is_valid, set_precision, transform, union_all
 from shapely.geometry import mapping, shape
 from spatialdata import read_zarr
 from spatialdata.models import ShapesModel
@@ -25,6 +25,7 @@ from xarray import DataTree
 
 TILE_SIZE = 256
 OBJECTS_PER_FILE = 25000
+QUPATH_ROI_GRID_SIZE = 0.01
 
 
 def levels(element):
@@ -124,6 +125,26 @@ def table_stores(stores, kind, model):
             yield attrs["classifier"], store.tables[kind]
 
 
+def valid_as_float32(geometries):
+    packed = transform(geometries, lambda xy: xy.astype(np.float32).astype(np.float64))
+    return is_valid(packed)
+
+
+def qupath_geometries(geometries):
+    # QuPath stores GeoJSON coordinates as float32 before reducing ROI precision.
+    # Snap in double precision where this first conversion would break topology.
+    geometries = np.asarray(geometries)
+    affected = np.flatnonzero(~valid_as_float32(geometries))
+    if not affected.size:
+        return geometries
+    affected = affected[is_valid(geometries[affected])]
+    snapped = set_precision(geometries[affected], QUPATH_ROI_GRID_SIZE)
+    usable = ~is_empty(snapped) & valid_as_float32(snapped)
+    result = geometries.copy()
+    result[affected[usable]] = snapped[usable]
+    return result
+
+
 def feature(uuid_key, object_type, labels, instance_id, geometry, fields):
     properties = {"objectType": object_type}
     classification = fields.pop("classification", None)
@@ -191,16 +212,19 @@ class SlideExport:
             columns=[exported.geometry.name, "qupath_class"], errors="ignore"
         )
         rows = zip(
-            exported.geometry.items(),
+            exported.index,
             columns.itertuples(index=False, name=None),
             strict=True,
         )
         for start in range(0, len(exported), OBJECTS_PER_FILE):
+            geometries = qupath_geometries(
+                exported.geometry.array[start : start + OBJECTS_PER_FILE]
+            )
             filename = self.target / f"{len(self.layers):03d}-{start:09d}.geojson"
             with filename.open("w", encoding="utf-8") as output:
                 output.write('{"type":"FeatureCollection","features":[')
-                for offset in range(min(OBJECTS_PER_FILE, len(exported) - start)):
-                    (instance_id, geometry), values = next(rows)
+                for offset, geometry in enumerate(geometries):
+                    instance_id, values = next(rows)
                     item = feature(
                         f"{self.target.name}/{label}/{start + offset}",
                         object_type,
