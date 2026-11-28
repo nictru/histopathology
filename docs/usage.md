@@ -21,9 +21,9 @@ Pass a CSV file to `--input` with one row per slide. Give each slide a unique sa
 
 See the [example samplesheet](../assets/samplesheet.csv).
 
-The pipeline uses WSIData to read CZI with pylibCZI, TIFF and SVS with TiffSlide, and JPEG with Bio-Formats. It writes a self-contained `<sample>.zarr` to `<OUTDIR>/slides/`. The store contains the RGB image under the `wsi` key. Its attributes record the pixel calibration and the original CZI scene origin when applicable. The pylibCZI reader fills gaps in a CZI scene with black pixels.
+The pipeline uses WSIData to read CZI with pylibCZI, TIFF and SVS with TiffSlide, and JPEG with Bio-Formats. It writes a self-contained `<sample>.zarr` to `<OUTDIR>/01_preprocessing/slides/`. The store contains the RGB image under the `wsi` key. Its attributes record the pixel calibration and the original CZI scene origin when applicable. The pylibCZI reader fills gaps in a CZI scene with black pixels.
 
-When enabled, normalization reads the ingested Zarr and writes `<sample>.normalized.zarr` to `<OUTDIR>/normalized_slides/`. Reopen either slide store with WSIData. Ingested images, tissue masks, and normalized images use 2048 × 2048 pixel Zarr v3 shards with 256 × 256 pixel chunks. Use a fresh `--outdir` when replacing older, unsharded outputs.
+When enabled, normalization reads the ingested Zarr and writes `<sample>.normalized.zarr` to `<OUTDIR>/01_preprocessing/normalized_slides/`. Reopen either slide store with WSIData. Ingested images, tissue masks, and normalized images use 2048 × 2048 pixel Zarr v3 shards with 256 × 256 pixel chunks. Use a fresh `--outdir` when replacing older, unsharded outputs.
 
 ```python
 from spatialdata import read_zarr
@@ -36,7 +36,7 @@ wsi = open_wsi(read_zarr("sample.normalized.zarr"), image_key="wsi")
 
 To enable stain normalization, set `--stain_reference` to a sample ID from the samplesheet. Omit it to skip normalization. Reinhard is the default method. Set `--stain_normalization macenko` or `--stain_normalization vahadane` to use another method.
 
-LazySlide detects tissue once per slide using Otsu thresholding on color saturation. The pipeline writes a binary `wsi_tissue` label to `<OUTDIR>/tissue_masks/<sample>.tissue.zarr` for tiling and optional stain normalization.
+LazySlide detects tissue once per slide using Otsu thresholding on color saturation. The pipeline writes a binary `wsi_tissue` label to `<OUTDIR>/01_preprocessing/tissue_masks/<sample>.tissue.zarr` for tiling and optional stain normalization.
 
 The pipeline fits the selected reference slide once and uses it to normalize every slide in the samplesheet, including the reference itself. Squidpy uses the precomputed masks to estimate stain statistics from tissue and preserve the background. Each normalized Zarr records the method, reference sample, and fitted statistics in its attributes. Slides with no detected tissue retain their original pixels.
 
@@ -44,9 +44,9 @@ The pipeline fits the selected reference slide once and uses it to normalize eve
 
 Set `--tissue_segmentation_method` to one or more comma-separated methods. Choose `otsu` (the default), `entropy`, `grandqc-tissue`, `hest-tissue-segmentation`, or `pathprofiler`. The first method supplies the mask for normalization, tiling, and downstream analysis. All selected methods write masks and MultiQC previews. The learned methods use the slide's pixel size from the file metadata or samplesheet.
 
-The pipeline tiles the tissue on each ingested slide and writes `<OUTDIR>/tiles/<sample>.tiles.zarr`. It defaults to 256 × 256 pixels at the slide's native resolution, with no overlap and at most 30% background per tile. Set `--tile_px`, `--tile_mpp`, `--tile_overlap`, or `--tile_background_fraction` to change these values.
+The pipeline tiles the tissue on each ingested slide and writes `<OUTDIR>/01_preprocessing/tiles/<sample>.tiles.zarr`. It defaults to 256 × 256 pixels at the slide's native resolution, with no overlap and at most 30% background per tile. Set `--tile_px`, `--tile_mpp`, `--tile_overlap`, or `--tile_background_fraction` to change these values.
 
-The pipeline measures brightness, contrast, sharpness, and saturation on the original slide tiles. It writes `<sample>.tileqc.zarr` to `<OUTDIR>/qc/`. FocusLiteNN, PathProfilerQC, and GrandQC load their default model weights through LazySlide. They write `<sample>.focuslitenn.zarr`, `<sample>.pathprofilerqc.zarr`, and `<sample>.grandqc.zarr` to `<OUTDIR>/qc/`.
+The pipeline measures brightness, contrast, sharpness, and saturation on the original slide tiles. The `<OUTDIR>/02_quality_control/tiles/` directory contains `<sample>.tileqc.zarr`, `<sample>.focuslitenn.zarr`, and `<sample>.pathprofilerqc.zarr`. GrandQC writes `<sample>.grandqc.zarr` to `<OUTDIR>/02_quality_control/slides/`. FocusLiteNN, PathProfilerQC, and GrandQC load their default model weights through LazySlide.
 
 GrandQC defaults to `7x`. Use `--grandqc_variant` to select `5x`, `7x`, or `10x`. The pipeline makes a separate overlapping 512 × 512 grid at 2 MPP for `5x`, 1.5 MPP for `7x`, or 1 MPP for `10x`.
 
@@ -70,7 +70,7 @@ For HistoPLUS, request access on the [model page](https://huggingface.co/Owkin-B
 
 For AWS Batch, launch through Seqera Platform with the secret configured in the workspace.
 
-Find results in `<OUTDIR>/segmentation/<sample>.<model>.cells.zarr`. The `nuclei` or `cells` shapes are in the slide coordinate system. Each store records the model, weight source, device, tile specification, and instance count. A slide with zero detections has an instance count of zero and no shapes layer.
+Find results in `<OUTDIR>/03_segmentation/<sample>.<model>.cells.zarr`. The `nuclei` or `cells` shapes are in the slide coordinate system. Each store records the model, weight source, device, tile specification, and instance count. A slide with zero detections has an instance count of zero and no shapes layer.
 
 ### GPU acceleration
 
@@ -111,7 +111,7 @@ Registry keys supported by `--embedding_model`:
 - **Vision** — `chief`, `conch-madeleine`, `crisp`, `crown`, `ctranspath`, `genbio-pathfm`, `gigapath`, `gigapath-flash`, `gpfm`, `h-optimus-0`, `h-optimus-1`, `h0-mini`, `hibou-b`, `hibou-l`, `lunit-bt`, `lunit-dino-s8`, `lunit-dino-s8-moozy`, `lunit-dino-s16`, `lunit-mocov2`, `lunit-swav`, `mascaret`, `midnight`, `mstar`, `open-midnight`, `path_orchestra`, `phaet`, `phikon`, `phikonv2`, `rudolfv2`, `rudolfv2-b`, `rudolfv2-s`, `uni`, `uni2`, `virchow`, `virchow2`.
 - **Image branches of multimodal encoders** — `biomedclip`, `conceptclip`, `conch`, `conch_v1.5`, `keep`, `medsiglip`, `musk`, `omiclip`, `plip`, `quiltnet-b16`, `quiltnet-b16-pmb`, `quiltnet-b32`, `titan`.
 
-Each `<OUTDIR>/embeddings/<sample>.<model>.embeddings.zarr` contains the tile geometries and a linked AnnData table named `<model>_tiles`. The table contains one row per tile, with a `tile_id` that identifies its geometry. Slides without eligible tiles produce a store with a tile count of zero.
+Each `<OUTDIR>/05_embeddings/tiles/<sample>.<model>.embeddings.zarr` contains the tile geometries and a linked AnnData table named `<model>_tiles`. The table contains one row per tile, with a `tile_id` that identifies its geometry. Slides without eligible tiles produce a store with a tile count of zero.
 
 ## Slide embeddings
 
